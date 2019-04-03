@@ -44,6 +44,9 @@ static int forward_argc;
 static char **forward_argv;
 static int exit_status;
 
+int screenWidth = 0;
+int screenHeight = 0;
+
 int sdlpal_main(int argc, char **argv)
 {
     int i;
@@ -70,12 +73,6 @@ int sdlpal_main(int argc, char **argv)
 
     return exit_status;
 }
-
-@interface SDLPalAppDelegate ()
-/** in settings or in game? */
-@property (nonatomic) BOOL isInGame;
-
-@end
 
 @implementation SDLPalAppDelegate
 
@@ -112,8 +109,6 @@ int sdlpal_main(int argc, char **argv)
 #undef SDL_IPHONE_LAUNCHSCREEN
 
 - (void)launchGame {
-    self.isInGame = YES;
-    
     SDL_SetMainReady();
     [self performSelector:@selector(postFinishLaunch) withObject:nil afterDelay:0.0];
     [self.window setBackgroundColor:[UIColor blackColor]];
@@ -125,14 +120,16 @@ int sdlpal_main(int argc, char **argv)
     return YES;
 }
 - (void)restart {
+    CGRect screenRect = [[UIScreen mainScreen] bounds];
+    screenWidth = (int)screenRect.size.width;
+    screenHeight = (int)screenRect.size.height;
+    
     PAL_LoadConfig(YES);
     NSString *documentPath = [[[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject] path];
     if( getppid() != 1)
         NSLog(@"document path:%@",documentPath);
     BOOL crashed = [[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"%@/running",documentPath]];
     if( gConfig.fLaunchSetting || crashed ) {
-        self.isInGame = NO;
-        
         self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
         UIStoryboard *sb = [UIStoryboard storyboardWithName:@"Settings" bundle:nil];
         UIViewController *vc = [sb instantiateInitialViewController];
@@ -154,11 +151,6 @@ int sdlpal_main(int argc, char **argv)
 }
 
 #if !TARGET_OS_TV
-- (UIInterfaceOrientationMask)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
-    // if in game.only support landscape
-    return self.isInGame ? UIInterfaceOrientationMaskLandscape : UIInterfaceOrientationMaskAll;
-}
-
 - (void)application:(UIApplication *)application didChangeStatusBarOrientation:(UIInterfaceOrientation)oldStatusBarOrientation
 {
     BOOL isLandscape = UIInterfaceOrientationIsLandscape(application.statusBarOrientation);

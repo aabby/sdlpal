@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -93,6 +93,17 @@ PAL_RegisterInputFilter(
    void (*init_filter)(),
    int (*event_filter)(const SDL_Event *, volatile PALINPUTSTATE *),
    void (*shutdown_filter)()
+);
+
+VOID
+PAL_KeyDown(
+	INT         key,
+	BOOL        fRepeat
+);
+
+VOID
+PAL_KeyUp(
+	INT         key
 );
 
 extern volatile PALINPUTSTATE g_InputState;

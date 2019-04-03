@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -186,7 +186,7 @@ PAL_TrademarkScreen(
    if (PAL_PlayAVI("1.avi")) return;
 
    PAL_SetPalette(3, FALSE);
-   PAL_RNGPlay(6, 0, -1, 25);
+   PAL_RNGPlay(6, 0, 1000, 25);
    UTIL_Delay(1000);
    PAL_FadeOut(1);
 }
@@ -228,6 +228,8 @@ PAL_SplashScreen(
       fprintf(stderr, "ERROR: PAL_SplashScreen(): palette == NULL\n");
       return;
    }
+
+   gpGlobals->dwUI_Game |= 1;
 
    //
    // Allocate all the needed memory at once for simplification
@@ -440,6 +442,7 @@ PAL_SplashScreen(
    }
 
    PAL_FadeOut(1);
+   gpGlobals->dwUI_Game = 0;
 }
 
 

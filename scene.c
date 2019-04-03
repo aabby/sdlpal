@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -24,6 +24,11 @@
 //
 
 #include "main.h"
+
+extern INT mousex, mousey;
+extern BOOL mouseLkey;
+extern UINT32   lastReleaseMLButtonTime, lastPressMLButtonTime;
+extern INT mouseKeyPosX, mouseKeyPosY;
 
 #define MAX_SPRITE_TO_DRAW         2048
 
@@ -97,8 +102,8 @@ PAL_CalcCoverTiles(
    int             x, y, i, l, iTileHeight;
    LPCBITMAPRLE    lpTile;
 
-   const int       sx = PAL_X(gpGlobals->viewport) + PAL_X(lpSpriteToDraw->pos) - lpSpriteToDraw->iLayer/2;
-   const int       sy = PAL_Y(gpGlobals->viewport) + PAL_Y(lpSpriteToDraw->pos) - lpSpriteToDraw->iLayer;
+   const int       sx = PAL_X(gpGlobals->viewport) + PAL_X(lpSpriteToDraw->pos);
+   const int       sy = PAL_Y(gpGlobals->viewport) + PAL_Y(lpSpriteToDraw->pos);
    const int       sh = ((sx % 32) ? 1 : 0);
 
    const int       width = PAL_RLEGetWidth(lpSpriteToDraw->lpSpriteFrame);
@@ -775,8 +780,108 @@ PAL_UpdateParty(
    //
    // Has user pressed one of the arrow keys?
    //
+   BOOL isPlayerControl = FALSE;
+
+   if (gpGlobals->dwUI_Game == 2) //player control
+   {
+	   GamePadMode(TRUE);
+	   INT xdiff = mouseKeyPosX - mousex;
+	   INT ydiff = mouseKeyPosY - mousey;
+	   BOOL isMoving = FALSE;
+	   if (mouseLkey == TRUE && (mouseKeyPosX == -100 || xdiff > 10 || xdiff < -10 || ydiff>10 || ydiff < -10))
+	   {
+		   isMoving = TRUE;
+		   mouseKeyPosX = -100;
+	   }
+	   else if (mouseLkey == TRUE && (mousex < 106 || mousex>212 || mousey < 67 || mousey>133))
+	   {
+		   isMoving = TRUE;
+		   mouseKeyPosX = -100;
+	   }
+	   BOOL TimeOver = FALSE;
+	   UINT32 NowTricks = SDL_GetTicks();
+	   if (mouseLkey == TRUE && ((NowTricks - lastPressMLButtonTime ) > 300))
+	   {
+		   TimeOver = TRUE;
+	   }
+	   if (gUI_GamePad.currentDirection != DPadNone && mouseLkey == TRUE)
+	   {
+		   switch (gUI_GamePad.currentDirection)
+		   {
+		   case DPadLeft:
+			   PAL_KeyDown(kKeyLeft, FALSE);
+			   break;
+		   case DPadRight:
+			   PAL_KeyDown(kKeyRight, FALSE);
+			   break;
+		   case DPadUp:
+			   PAL_KeyDown(kKeyUp, FALSE);
+			   break;
+		   case DPadDown:
+			   PAL_KeyDown(kKeyDown, FALSE);
+			   break;
+		   case DPadLeftDown:
+			   PAL_KeyDown(kKeyDown, FALSE);
+			   break;
+		   case DPadLeftUp:
+			   PAL_KeyDown(kKeyLeft, FALSE);
+			   break;
+		   case DPadRightDown:
+			   PAL_KeyDown(kKeyRight, FALSE);
+			   break;
+		   case DPadRightUp:
+			   PAL_KeyDown(kKeyUp, FALSE);
+			   break;
+
+		   }
+	   }
+	   if (g_InputState.dwKeyPress == 0 && mouseLkey == TRUE && (isMoving == TRUE || TimeOver == TRUE))
+	   {
+		   isPlayerControl = TRUE;
+		   int centerx = 320 / 2;
+		   int centery = 200 / 2;
+		   if (mousex <= centerx && mousey <= centery)
+		   {
+			   g_InputState.prevdir = g_InputState.dir;
+			   g_InputState.dir = kDirWest;
+		   }
+		   else if (mousex > centerx && mousey <= centery)
+		   {
+			   g_InputState.prevdir = g_InputState.dir;
+			   g_InputState.dir = kDirNorth;
+		   }
+		   else if (mousex <= centerx && mousey > centery)
+		   {
+			   g_InputState.prevdir = g_InputState.dir;
+			   g_InputState.dir = kDirSouth;
+		   }
+		   else if (mousex > centerx && mousey > centery)
+		   {
+			   g_InputState.prevdir = g_InputState.dir;
+			   g_InputState.dir = kDirEast;
+		   }
+	   }
+	   else
+	   {
+		   if (g_InputState.dwKeyPress & (kKeyUp | kKeyDown | kKeyLeft | kKeyRight))
+		   {
+			   isPlayerControl = TRUE;
+		   }
+		   else
+		   {
+			   g_InputState.dir = kDirUnknown;
+			   g_InputState.prevdir = kDirUnknown;
+		   }
+	   }
+   }
    if (g_InputState.dir != kDirUnknown)
    {
+	   if (gpGlobals->fDoAutoSave == TRUE && isPlayerControl == TRUE)
+	   {
+		   PAL_AutoSaveGame();
+		   gpGlobals->fDoAutoSave = FALSE;
+	   }
+
       xOffset = ((g_InputState.dir == kDirWest || g_InputState.dir == kDirSouth) ? -16 : 16);
       yOffset = ((g_InputState.dir == kDirWest || g_InputState.dir == kDirNorth) ? -8 : 8);
 

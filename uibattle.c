@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -21,12 +21,48 @@
 //
 
 #include "main.h"
-#include "fight.h"
 
 extern WORD g_rgPlayerPos[3][3][2];
 
 static int g_iCurMiscMenuItem = 0;
 static int g_iCurSubMenuItem = 0;
+
+static MENUITEM        MenuItem_kBattleUISelectMove[] =
+{
+	// value  label                     enabled   pos
+	{ 1,SPRITENUM_BATTLEICON_ATTACK,    TRUE,     PAL_XY(27, 140), PAL_XY(30, 30) },
+	{ 2,SPRITENUM_BATTLEICON_MAGIC,     TRUE,     PAL_XY(0, 155), PAL_XY(30, 30) },
+	{ 3,SPRITENUM_BATTLEICON_COOPMAGIC, TRUE,     PAL_XY(54, 155), PAL_XY(30, 30) },
+	{ 4,SPRITENUM_BATTLEICON_MISCMENU,  TRUE,     PAL_XY(27, 170), PAL_XY(30, 30) },
+};
+
+#ifdef PAL_CLASSIC
+MENUITEM gBattleMiscMenuItem[] = {
+	// value   label                     enabled   position         sise
+	{ 0,      BATTLEUI_LABEL_AUTO,      TRUE,     PAL_XY(16, 32),  PAL_XY(16 * 2, 18) },
+	{ 1,      BATTLEUI_LABEL_INVENTORY, TRUE,     PAL_XY(16, 50),  PAL_XY(16 * 2, 18) },
+	{ 2,      BATTLEUI_LABEL_DEFEND,    TRUE,     PAL_XY(16, 68),  PAL_XY(16 * 2, 18) },
+	{ 3,      BATTLEUI_LABEL_FLEE,      TRUE,     PAL_XY(16, 86),  PAL_XY(16 * 2, 18) },
+	{ 4,      BATTLEUI_LABEL_STATUS,    TRUE,     PAL_XY(16, 104), PAL_XY(16 * 2, 18) }
+};
+#else
+MENUITEM gBattleMiscMenuItem[] = {
+	// value   label                   enabled   position
+	{ 0,      BATTLEUI_LABEL_ITEM,    TRUE,     PAL_XY(16, 32),  PAL_XY(16 * 2, 18) },
+	{ 1,      BATTLEUI_LABEL_DEFEND,  TRUE,     PAL_XY(16, 50),  PAL_XY(16 * 2, 18) },
+	{ 2,      BATTLEUI_LABEL_AUTO,    TRUE,     PAL_XY(16, 68),  PAL_XY(16 * 2, 18) },
+	{ 3,      BATTLEUI_LABEL_FLEE,    TRUE,     PAL_XY(16, 86),  PAL_XY(16 * 2, 18) },
+	{ 4,      BATTLEUI_LABEL_STATUS,  TRUE,     PAL_XY(16, 104), PAL_XY(16 * 2, 18) }
+};
+#endif
+
+MENUITEM gBattleMiscMenuItemSub[] = {
+	// value   label                      enabled   position
+	{ 0,      BATTLEUI_LABEL_USEITEM,    TRUE,     PAL_XY(44, 62) ,PAL_XY(16 * 2, 18) },
+	{ 1,      BATTLEUI_LABEL_THROWITEM,  TRUE,     PAL_XY(44, 80) ,PAL_XY(16 * 2, 18) },
+};
+
+MENUITEM gSelectTargetMenuItem[30];
 
 VOID
 PAL_PlayerInfoBox(
@@ -311,30 +347,27 @@ PAL_BattleUIIsActionValid(
       {
          return FALSE;
       }
-#ifndef PAL_CLASSIC
       for (i = 0; i <= gpGlobals->wMaxPartyMemberIndex; i++)
       {
          w = gpGlobals->rgParty[i].wPlayerRole;
 
+#ifndef PAL_CLASSIC
          if (gpGlobals->g.PlayerRoles.rgwHP[w] < gpGlobals->g.PlayerRoles.rgwMaxHP[w] / 5 ||
             gpGlobals->rgPlayerStatus[w][kStatusSleep] != 0 ||
             gpGlobals->rgPlayerStatus[w][kStatusConfused] != 0 ||
             gpGlobals->rgPlayerStatus[w][kStatusSilence] != 0 ||
             g_Battle.rgPlayer[i].flTimeMeter < 100 ||
             g_Battle.rgPlayer[i].state == kFighterAct)
+#else
+         if (PAL_IsPlayerDying(w) ||
+            gpGlobals->rgPlayerStatus[w][kStatusSleep] != 0 ||
+            gpGlobals->rgPlayerStatus[w][kStatusConfused] != 0 ||
+            gpGlobals->rgPlayerStatus[w][kStatusSilence] != 0)
+#endif
          {
             return FALSE;
          }
       }
-#else
-      {
-         int healthyNumber = 0;
-         for (i = 0; i <= gpGlobals->wMaxPartyMemberIndex; i++)
-            if (PAL_IsPlayerHealthy(gpGlobals->rgParty[i].wPlayerRole))
-               healthyNumber++;
-         return PAL_IsPlayerHealthy(wPlayerRole) && healthyNumber > 1;
-      }
-#endif
       break;
    }
 
@@ -366,30 +399,12 @@ PAL_BattleUIDrawMiscMenu(
    int           i;
    BYTE          bColor;
 
-#ifdef PAL_CLASSIC
-   MENUITEM rgMenuItem[] = {
-      // value   label                     enabled   position
-      {  0,      BATTLEUI_LABEL_AUTO,      TRUE,     PAL_XY(16, 32)  },
-      {  1,      BATTLEUI_LABEL_INVENTORY, TRUE,     PAL_XY(16, 50)  },
-      {  2,      BATTLEUI_LABEL_DEFEND,    TRUE,     PAL_XY(16, 68)  },
-      {  3,      BATTLEUI_LABEL_FLEE,      TRUE,     PAL_XY(16, 86)  },
-      {  4,      BATTLEUI_LABEL_STATUS,    TRUE,     PAL_XY(16, 104) }
-   };
-#else
-   MENUITEM rgMenuItem[] = {
-      // value   label                   enabled   position
-      {  0,      BATTLEUI_LABEL_ITEM,    TRUE,     PAL_XY(16, 32)  },
-      {  1,      BATTLEUI_LABEL_DEFEND,  TRUE,     PAL_XY(16, 50)  },
-      {  2,      BATTLEUI_LABEL_AUTO,    TRUE,     PAL_XY(16, 68)  },
-      {  3,      BATTLEUI_LABEL_FLEE,    TRUE,     PAL_XY(16, 86)  },
-      {  4,      BATTLEUI_LABEL_STATUS,  TRUE,     PAL_XY(16, 104) }
-   };
-#endif
+
 
    //
    // Draw the box
    //
-   PAL_CreateBox(PAL_XY(2, 20), 4, PAL_MenuTextMaxWidth(rgMenuItem, sizeof(rgMenuItem)/sizeof(MENUITEM)) - 1, 0, FALSE);
+   PAL_CreateBox(PAL_XY(2, 20), 4, PAL_MenuTextMaxWidth(gBattleMiscMenuItem, sizeof(gBattleMiscMenuItem)/sizeof(MENUITEM)) - 1, 0, FALSE);
 
    //
    // Draw the menu items
@@ -410,8 +425,9 @@ PAL_BattleUIDrawMiscMenu(
          }
       }
 
-      PAL_DrawText(PAL_GetWord(rgMenuItem[i].wNumWord), rgMenuItem[i].pos, bColor, TRUE, FALSE, FALSE);
+      PAL_DrawText(PAL_GetWord(gBattleMiscMenuItem[i].wNumWord), gBattleMiscMenuItem[i].pos, bColor, TRUE, FALSE, FALSE);
    }
+   
 }
 
 static WORD
@@ -438,6 +454,27 @@ PAL_BattleUIMiscMenuUpdate(
    //
    PAL_BattleUIDrawMiscMenu(g_iCurMiscMenuItem, FALSE);
 
+   for (int i = 0; i < g_MenuCtrl.Count; i++)
+   {
+	   if (g_MenuCtrl.MenuItem[i].fEnabled)
+	   {
+		   if (g_MenuCtrl.Click && g_MenuCtrl.Select == i)
+		   {
+			   g_iCurMiscMenuItem = i;
+			   if (g_MenuCtrl.Click == 2)
+			   {
+				   g_MenuCtrl.Click = 0;
+				   if (g_MenuCtrl.LastSelect == i)
+				   {
+					   g_InputState.dwKeyPress |= kKeySearch;
+				   }
+				   else
+					   g_MenuCtrl.LastSelect = i;
+			   }
+		   }
+	   }
+   }
+
    //
    // Process inputs
    //
@@ -459,10 +496,12 @@ PAL_BattleUIMiscMenuUpdate(
    }
    else if (g_InputState.dwKeyPress & kKeySearch)
    {
+	   Setup_MenuCtrl(NULL, 0, 0);
       return g_iCurMiscMenuItem + 1;
    }
    else if (g_InputState.dwKeyPress & kKeyMenu)
    {
+	   Setup_MenuCtrl(NULL, 0, 0);
       return 0;
    }
 
@@ -491,12 +530,6 @@ PAL_BattleUIMiscItemSubMenuUpdate(
    int             i;
    BYTE            bColor;
 
-   MENUITEM rgMenuItem[] = {
-      // value   label                      enabled   position
-      {  0,      BATTLEUI_LABEL_USEITEM,    TRUE,     PAL_XY(44, 62)  },
-      {  1,      BATTLEUI_LABEL_THROWITEM,  TRUE,     PAL_XY(44, 80)  },
-   };
-
    //
    // Draw the menu
    //
@@ -505,8 +538,8 @@ PAL_BattleUIMiscItemSubMenuUpdate(
 #else
    PAL_BattleUIDrawMiscMenu(0, TRUE);
 #endif
-   PAL_CreateBox(PAL_XY(30, 50), 1, PAL_MenuTextMaxWidth(rgMenuItem, 2) - 1, 0, FALSE);
-
+   PAL_CreateBox(PAL_XY(30, 50), 1, PAL_MenuTextMaxWidth(gBattleMiscMenuItemSub, 2) - 1, 0, FALSE);
+   
    //
    // Draw the menu items
    //
@@ -519,9 +552,29 @@ PAL_BattleUIMiscItemSubMenuUpdate(
          bColor = MENUITEM_COLOR_SELECTED;
       }
 
-      PAL_DrawText(PAL_GetWord(rgMenuItem[i].wNumWord), rgMenuItem[i].pos, bColor, TRUE, FALSE, FALSE);
+      PAL_DrawText(PAL_GetWord(gBattleMiscMenuItemSub[i].wNumWord), gBattleMiscMenuItemSub[i].pos, bColor, TRUE, FALSE, FALSE);
    }
 
+   for (int i = 0; i < g_MenuCtrl.Count; i++)
+   {
+	   if (g_MenuCtrl.MenuItem[i].fEnabled)
+	   {
+		   if (g_MenuCtrl.Click && g_MenuCtrl.Select == i)
+		   {
+			   g_iCurSubMenuItem = i;
+			   if (g_MenuCtrl.Click == 2)
+			   {
+				   g_MenuCtrl.Click = 0;
+				   if (g_MenuCtrl.LastSelect == i)
+				   {
+					   g_InputState.dwKeyPress |= kKeySearch;
+				   }
+				   else
+					   g_MenuCtrl.LastSelect = i;
+			   }
+		   }
+	   }
+   }
    //
    // Process inputs
    //
@@ -535,10 +588,12 @@ PAL_BattleUIMiscItemSubMenuUpdate(
    }
    else if (g_InputState.dwKeyPress & kKeySearch)
    {
+	   Setup_MenuCtrl(NULL, 0, 0);
       return g_iCurSubMenuItem + 1;
    }
    else if (g_InputState.dwKeyPress & kKeyMenu)
    {
+	   Setup_MenuCtrl(gBattleMiscMenuItem, 5, 2);
       return 0;
    }
 
@@ -606,7 +661,9 @@ PAL_BattleUIPlayerReady(
    g_Battle.UI.state = kBattleUISelectMove;
    g_Battle.UI.wSelectedAction = 0;
    g_Battle.UI.MenuState = kBattleMenuMain;
-
+   g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+   g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
+   g_InputState.dir = kDirUnknown;
 #ifndef PAL_CLASSIC
    //
    // Play a sound which indicates the player is ready
@@ -668,6 +725,8 @@ PAL_BattleUIUseItem(
       else
       {
          g_Battle.UI.MenuState = kBattleMenuMain;
+		 g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+		 g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
       }
    }
 }
@@ -709,12 +768,13 @@ PAL_BattleUIThrowItem(
             if(g_Battle.UI.iPrevEnemyTarget != -1)
                g_Battle.UI.iSelectedIndex = g_Battle.UI.iPrevEnemyTarget;
             g_Battle.UI.state = kBattleUISelectTargetEnemy;
-            g_Battle.UI.iSelectedIndex = 0;
          }
       }
       else
       {
          g_Battle.UI.MenuState = kBattleMenuMain;
+		 g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+		 g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
       }
    }
 }
@@ -803,23 +863,37 @@ PAL_BattleUIUpdate(
 {
    int              i, j, x, y;
    WORD             wPlayerRole, w;
+   SDL_Rect   rect;
    static int       s_iFrame = 0;
+   BOOL BACKvisable = gUI_Buttom[buttomBACK].visable;
+
+   gUI_Buttom[buttomAttack].visable = FALSE;
+   gUI_Buttom[buttomMagic].visable = FALSE;
+   gUI_Buttom[buttomRepet].visable = FALSE;
 
    s_iFrame++;
 
    if (g_Battle.UI.fAutoAttack && !gpGlobals->fAutoBattle)
    {
+	   BACKvisable = TRUE;
+	   if (gUI_Buttom[buttomBACK].KeyClick)
+	   {
+		   g_InputState.dwKeyPress |= kKeyMenu;
+		   BACKvisable = FALSE;
+	   }
       //
       // Draw the "auto attack" message if in the autoattack mode.
       //
       if (g_InputState.dwKeyPress & kKeyMenu)
       {
          g_Battle.UI.fAutoAttack = FALSE;
+		 RestoreBACK();
+		 BACKvisable = FALSE;
       }
       else
       {
          LPCWSTR itemText = PAL_GetWord(BATTLEUI_LABEL_AUTO);
-         PAL_DrawText(itemText, PAL_XY(312-PAL_TextWidth(itemText), 10),
+         PAL_DrawText(itemText, PAL_XY(312-PAL_TextWidth(itemText) - 24, 10),
             MENUITEM_COLOR_CONFIRMED, TRUE, FALSE, FALSE);
       }
    }
@@ -866,16 +940,49 @@ PAL_BattleUIUpdate(
 
       goto end;
    }
-
+   if (gUI_Buttom[buttomMagic].KeyClick)
+   {
+	   
+	   BACKvisable = TRUE;
+	   if (g_InputState.dwKeyPress & kKeyMenu)
+	   {
+		   gUI_Buttom[buttomMagic].KeyClick = FALSE;
+		   RestoreBACK();
+		   BACKvisable = FALSE;
+	   }
+	   
+   }
+   if (gUI_Buttom[buttomAttack].KeyClick)
+   {
+	   gUI_Buttom[buttomAttack].KeyClick = FALSE;
+	   g_InputState.dwKeyPress |= kKeyAuto;
+   }
    if (g_InputState.dwKeyPress & kKeyAuto)
    {
       g_Battle.UI.fAutoAttack = !g_Battle.UI.fAutoAttack;
       g_Battle.UI.MenuState = kBattleMenuMain;
+	  g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+	  g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
+	  if (g_Battle.UI.fAutoAttack)
+	  {
+		  BACKvisable = TRUE;
+		  Switch_BACKtoClose();
+	  }
+	  else
+	  {
+		  BACKvisable = FALSE;
+		  RestoreBACK();
+	  }
+	  
    }
 
 #ifdef PAL_CLASSIC
    if (g_Battle.Phase == kBattlePhasePerformAction)
    {
+	   if (!g_Battle.UI.fAutoAttack && !gUI_Buttom[buttomMagic].KeyClick)
+	   {
+		   BACKvisable = FALSE;
+	   }
       goto end;
    }
 
@@ -994,6 +1101,8 @@ PAL_BattleUIUpdate(
       PAL_RLEBlitToSurface(PAL_SpriteGetFrame(gpSpriteUI, i), gpScreen, PAL_XY(x, y));
    }
 
+
+
    switch (g_Battle.UI.state)
    {
    case kBattleUIWait:
@@ -1031,19 +1140,72 @@ PAL_BattleUIUpdate(
 
          if (g_Battle.UI.MenuState == kBattleMenuMain)
          {
+			 if (g_Battle.UI.wCurPlayerIndex == 0)
+				 BACKvisable = FALSE;
+			 else
+				 BACKvisable = TRUE;
+
+			 Setup_MenuCtrl(MenuItem_kBattleUISelectMove, 4, g_Battle.UI.wSelectedAction);
+			 for (int i = 0; i < 4; i++)
+			 {
+				 if (i == 1)
+					 g_MenuCtrl.MenuItem[i].fEnabled = PAL_BattleUIIsActionValid(kBattleUIActionMagic);
+				 else if (i == 2)
+					 g_MenuCtrl.MenuItem[i].fEnabled = PAL_BattleUIIsActionValid(kBattleUIActionCoopMagic);
+
+				 if (g_MenuCtrl.Click != 0 && g_MenuCtrl.Select == i && g_MenuCtrl.MenuItem[i].fEnabled == TRUE)
+				 {
+					 g_Battle.UI.wSelectedAction = i;
+					 switch (i)
+					 {
+					 case 0:
+						 g_InputState.dir = kDirNorth;
+						 break;
+					 case 1:
+						 g_InputState.dir = kDirWest;
+						 break;
+					 case 2:
+						 g_InputState.dir = kDirEast;
+						 break;
+					 case 3:
+						 g_InputState.dir = kDirSouth;
+						 break;
+					 }
+
+					 if (g_MenuCtrl.Click == 2)
+					 {
+						 g_MenuCtrl.Click = 0;
+						 if (g_MenuCtrl.LastSelect == i)
+						 {
+							 g_InputState.dwKeyPress |= kKeySearch;
+							 Setup_MenuCtrl(NULL, 0, 0);
+						 }
+						 else
+							 g_MenuCtrl.LastSelect = i;
+						 
+						 break;
+					 }
+				 }
+			 }
             if (g_InputState.dir == kDirNorth)
             {
                g_Battle.UI.wSelectedAction = 0;
+			   g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+			   //g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
             }
             else if (g_InputState.dir == kDirSouth)
             {
                g_Battle.UI.wSelectedAction = 3;
+			   g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+			   //g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
             }
             else if (g_InputState.dir == kDirWest)
             {
                if (PAL_BattleUIIsActionValid(kBattleUIActionMagic))
                {
                   g_Battle.UI.wSelectedAction = 1;
+				  g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+				  //g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
                }
             }
             else if (g_InputState.dir == kDirEast)
@@ -1051,13 +1213,19 @@ PAL_BattleUIUpdate(
                if (PAL_BattleUIIsActionValid(kBattleUIActionCoopMagic))
                {
                   g_Battle.UI.wSelectedAction = 2;
+				  g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+				  //g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
                }
             }
          }
+		 else
+			 BACKvisable = TRUE;
 
          if (!PAL_BattleUIIsActionValid(rgItems[g_Battle.UI.wSelectedAction].action))
          {
             g_Battle.UI.wSelectedAction = 0;
+			g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+			//g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
          }
 
          for (i = 0; i < 4; i++)
@@ -1082,6 +1250,22 @@ PAL_BattleUIUpdate(
          switch (g_Battle.UI.MenuState)
          {
          case kBattleMenuMain:
+			 gUI_Buttom[buttomAttack].visable = TRUE;
+			 gUI_Buttom[buttomMagic].visable = TRUE;
+			 gUI_Buttom[buttomRepet].visable = TRUE;
+
+
+			 if (gUI_Buttom[buttomMagic].KeyClick)
+			 {
+				 Switch_BACKtoClose();
+				 g_InputState.dwKeyPress |= kKeyForce;
+			 }
+			 if (gUI_Buttom[buttomRepet].KeyClick)
+			 {
+				 gUI_Buttom[buttomRepet].KeyClick = FALSE;
+				 g_InputState.dwKeyPress |= kKeyRepeat;
+			 }
+
             if (g_InputState.dwKeyPress & kKeySearch)
             {
                switch (g_Battle.UI.wSelectedAction)
@@ -1100,7 +1284,6 @@ PAL_BattleUIUpdate(
                      if(g_Battle.UI.iPrevEnemyTarget != -1)
                         g_Battle.UI.iSelectedIndex = g_Battle.UI.iPrevEnemyTarget;
                      g_Battle.UI.state = kBattleUISelectTargetEnemy;
-                     g_Battle.UI.iSelectedIndex = 0;
                   }
                   break;
 
@@ -1133,7 +1316,6 @@ PAL_BattleUIUpdate(
                         if(g_Battle.UI.iPrevEnemyTarget != -1)
                            g_Battle.UI.iSelectedIndex = g_Battle.UI.iPrevEnemyTarget;
                         g_Battle.UI.state = kBattleUISelectTargetEnemy;
-                        g_Battle.UI.iSelectedIndex = 0;
                      }
                   }
                   else
@@ -1158,8 +1340,10 @@ PAL_BattleUIUpdate(
                   //
                   // Misc menu
                   //
+				   BACKvisable = TRUE;
+				   Setup_MenuCtrl(gBattleMiscMenuItem, 5, 0);
                   g_Battle.UI.MenuState = kBattleMenuMisc;
-//                  g_iCurMiscMenuItem = 0; //disabled due to not same as both original version
+                  g_iCurMiscMenuItem = 0;
                   break;
                }
             }
@@ -1308,7 +1492,8 @@ PAL_BattleUIUpdate(
             if (w != 0xFFFF)
             {
                g_Battle.UI.MenuState = kBattleMenuMain;
-
+			   g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+			   g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
                if (w != 0)
                {
                   g_Battle.UI.wActionType = kBattleActionMagic;
@@ -1325,7 +1510,6 @@ PAL_BattleUIUpdate(
                         if(g_Battle.UI.iPrevEnemyTarget != -1)
                            g_Battle.UI.iSelectedIndex = g_Battle.UI.iPrevEnemyTarget;
                         g_Battle.UI.state = kBattleUISelectTargetEnemy;
-                        g_Battle.UI.iSelectedIndex = 0;
                      }
                   }
                   else
@@ -1362,7 +1546,8 @@ PAL_BattleUIUpdate(
             if (w != 0xFFFF)
             {
                g_Battle.UI.MenuState = kBattleMenuMain;
-
+			   g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+			   g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
                switch (w)
                {
 #ifdef PAL_CLASSIC
@@ -1370,8 +1555,9 @@ PAL_BattleUIUpdate(
 #else
                case 1: // item
 #endif
+				   Setup_MenuCtrl(gBattleMiscMenuItemSub, 2, g_iCurSubMenuItem);
                   g_Battle.UI.MenuState = kBattleMenuMiscItemSubMenu;
-//                  g_iCurSubMenuItem = 0; //disabled due to not same as both original version
+                  g_iCurSubMenuItem = 0;
                   break;
 
 #ifdef PAL_CLASSIC
@@ -1389,6 +1575,7 @@ PAL_BattleUIUpdate(
                case 3: // auto
 #endif
                   g_Battle.UI.fAutoAttack = TRUE;
+				  Switch_BACKtoClose();
                   break;
 
                case 4: // flee
@@ -1409,7 +1596,8 @@ PAL_BattleUIUpdate(
             if (w != 0xFFFF)
             {
                g_Battle.UI.MenuState = kBattleMenuMain;
-
+			   g_MenuCtrl.Select = g_Battle.UI.wSelectedAction;
+			   g_MenuCtrl.LastSelect = g_Battle.UI.wSelectedAction;
                switch (w)
                {
                case 1: // use
@@ -1429,17 +1617,31 @@ PAL_BattleUIUpdate(
       break;
 
    case kBattleUISelectTargetEnemy:
+	   BACKvisable = TRUE;
       x = -1;
       y = 0;
-
+	  if (g_MenuCtrl.MenuItem != gSelectTargetMenuItem)
+	  {
+		  memset(gSelectTargetMenuItem, 0, sizeof(MENUITEM) * 30);
+	  }
       for (i = 0; i <= g_Battle.wMaxEnemyIndex; i++)
       {
+		  gSelectTargetMenuItem[i].fEnabled = FALSE;
          if (g_Battle.rgEnemy[i].wObjectID != 0)
          {
             x = i;
             y++;
+
+			gSelectTargetMenuItem[i].fEnabled = TRUE;
+			INT X = PAL_X(g_Battle.rgEnemy[i].pos);
+			INT Y = PAL_Y(g_Battle.rgEnemy[i].pos);
+			INT w = PAL_RLEGetWidth(PAL_SpriteGetFrame(g_Battle.rgEnemy[i].lpSprite, g_Battle.rgEnemy[i].wCurrentFrame));
+			INT h = PAL_RLEGetHeight(PAL_SpriteGetFrame(g_Battle.rgEnemy[i].lpSprite, g_Battle.rgEnemy[i].wCurrentFrame));
+			gSelectTargetMenuItem[i].pos = PAL_XY(X-(w/2), Y-h);
+			gSelectTargetMenuItem[i].size = PAL_XY(w, h);
          }
       }
+	  Setup_MenuCtrl(gSelectTargetMenuItem, g_Battle.wMaxEnemyIndex + 1, g_Battle.UI.iSelectedIndex);
 
       if (x == -1)
       {
@@ -1462,13 +1664,9 @@ PAL_BattleUIUpdate(
       //
       if (y == 1)
       {
-//         g_Battle.UI.iPrevEnemyTarget = x;  //disabled due to not same as both original version
+         g_Battle.UI.iPrevEnemyTarget = x;
          if( g_Battle.UI.iSelectedIndex == -1 )
             g_Battle.UI.iSelectedIndex = x;
-         else
-             for (g_Battle.UI.iSelectedIndex = 0; g_Battle.UI.iSelectedIndex < MAX_ENEMIES_IN_TEAM; g_Battle.UI.iSelectedIndex++)
-                 if (g_Battle.rgEnemy[g_Battle.UI.iSelectedIndex].wObjectID != 0)
-                     break;
          PAL_BattleCommitAction(FALSE);
          break;
       }
@@ -1476,10 +1674,6 @@ PAL_BattleUIUpdate(
       if (g_Battle.UI.iSelectedIndex > x)
       {
          g_Battle.UI.iSelectedIndex = x;
-      }
-      else if (g_Battle.UI.iSelectedIndex < 0)
-      {
-         g_Battle.UI.iSelectedIndex = 0;
       }
 
       for (i = 0; i <= x; i++)
@@ -1492,6 +1686,19 @@ PAL_BattleUIUpdate(
          g_Battle.UI.iSelectedIndex %= x + 1;
       }
 
+	  if (g_MenuCtrl.Click != 0)
+	  {
+		  g_Battle.UI.iSelectedIndex = g_MenuCtrl.Select;
+		  if (g_MenuCtrl.Click == 2)
+		  {
+			  if (g_MenuCtrl.LastSelect == g_MenuCtrl.Select)
+			  {
+				  g_InputState.dwKeyPress |= kKeySearch;
+			  }
+			  g_MenuCtrl.LastSelect = g_MenuCtrl.Select;
+			  g_MenuCtrl.Click = 0;
+		  }
+	  }
       //
       // Highlight the selected enemy
       //
@@ -1512,10 +1719,12 @@ PAL_BattleUIUpdate(
       if (g_InputState.dwKeyPress & kKeyMenu)
       {
          g_Battle.UI.state = kBattleUISelectMove;
+		 Setup_MenuCtrl(NULL, 0, 0);
       }
       else if (g_InputState.dwKeyPress & kKeySearch)
       {
-//         g_Battle.UI.iPrevEnemyTarget = g_Battle.UI.iSelectedIndex; //disabled due to not same as both original version
+         g_Battle.UI.iPrevEnemyTarget = g_Battle.UI.iSelectedIndex;
+		 Setup_MenuCtrl(NULL, 0, 0);
          PAL_BattleCommitAction(FALSE);
       }
       else if (g_InputState.dwKeyPress & (kKeyLeft | kKeyDown))
@@ -1540,9 +1749,17 @@ PAL_BattleUIUpdate(
             if( g_Battle.UI.iSelectedIndex >= MAX_ENEMIES_IN_TEAM ) g_Battle.UI.iSelectedIndex = 0;
          }
       }
+
+	  PAL_DrawText(PAL_GetWord(0x6FFF + 1), PAL_XY(120, 0), ITEMUSEMENU_COLOR_STATLABEL, TRUE, FALSE, FALSE); //select target
+	  rect.x = 120;
+	  rect.y = 0;
+	  rect.w = 16 * 6;
+	  rect.h = 18;
+	  VIDEO_UpdateScreen(&rect);
       break;
 
    case kBattleUISelectTargetPlayer:
+	   BACKvisable = TRUE;
 #ifdef PAL_CLASSIC
       //
       // Don't bother selecting when only 1 player is in the party
@@ -1553,6 +1770,31 @@ PAL_BattleUIUpdate(
          PAL_BattleCommitAction(FALSE);
       }
 #endif
+	  if (g_MenuCtrl.MenuItem != gSelectTargetMenuItem)
+	  {
+		  memset(gSelectTargetMenuItem, 0, sizeof(MENUITEM) * 30);
+		  INT X = 90;
+		  for (i = 10; i <= gpGlobals->wMaxPartyMemberIndex + 10; i++)
+		  {
+			  gSelectTargetMenuItem[i].fEnabled = TRUE;
+			  gSelectTargetMenuItem[i].pos = PAL_XY(X + ((i - 10) * 78), 161);
+			  gSelectTargetMenuItem[i].size = PAL_XY(78, 39);
+		  }
+	  }
+	  for (i = 0; i <= gpGlobals->wMaxPartyMemberIndex; i++)
+	  {
+		  gSelectTargetMenuItem[i].fEnabled = TRUE;
+		  INT w = PAL_RLEGetWidth(PAL_SpriteGetFrame(g_Battle.rgPlayer[i].lpSprite, g_Battle.rgPlayer[i].wCurrentFrame));
+		  INT h = PAL_RLEGetHeight(PAL_SpriteGetFrame(g_Battle.rgPlayer[i].lpSprite, g_Battle.rgPlayer[i].wCurrentFrame));
+		  INT X = PAL_X(g_Battle.rgPlayer[i].pos) - (w / 2);
+		  INT Y = PAL_Y(g_Battle.rgPlayer[i].pos) -h;
+		  if (Y + h > 160) h = 160 - Y;
+		  gSelectTargetMenuItem[i].pos = PAL_XY(X, Y);
+		  gSelectTargetMenuItem[i].size = PAL_XY(w, h);
+
+	  }
+
+	  Setup_MenuCtrl(gSelectTargetMenuItem, gpGlobals->wMaxPartyMemberIndex + 1 + 10, g_Battle.UI.iSelectedIndex);
 
       j = SPRITENUM_BATTLE_ARROW_SELECTEDPLAYER;
       if (s_iFrame & 1)
@@ -1568,12 +1810,31 @@ PAL_BattleUIUpdate(
 
       PAL_RLEBlitToSurface(PAL_SpriteGetFrame(gpSpriteUI, j), gpScreen, PAL_XY(x, y));
 
+	  if (g_MenuCtrl.Click != 0)
+	  {
+		  INT select = g_MenuCtrl.Select;
+		  if (g_MenuCtrl.Select >= 10) select -= 10;
+		  g_Battle.UI.iSelectedIndex = select;
+		  if (g_MenuCtrl.Click == 2)
+		  {
+			  if (g_MenuCtrl.LastSelect == select)
+			  {
+				  g_InputState.dwKeyPress |= kKeySearch;
+			  }
+			  g_MenuCtrl.LastSelect = select;
+			  g_MenuCtrl.Click = 0;
+			  
+		  }
+	  }
+
       if (g_InputState.dwKeyPress & kKeyMenu)
       {
+		  Setup_MenuCtrl(NULL, 0, 0);
          g_Battle.UI.state = kBattleUISelectMove;
       }
       else if (g_InputState.dwKeyPress & kKeySearch)
       {
+		  Setup_MenuCtrl(NULL, 0, 0);
          PAL_BattleCommitAction(FALSE);
       }
       else if (g_InputState.dwKeyPress & (kKeyLeft | kKeyDown))
@@ -1599,6 +1860,12 @@ PAL_BattleUIUpdate(
          }
       }
 
+	  PAL_DrawText(PAL_GetWord(0x6FFF + 1), PAL_XY(120, 0), ITEMUSEMENU_COLOR_STATLABEL, TRUE, FALSE, FALSE); //select target
+	  rect.x = 120;
+	  rect.y = 0;
+	  rect.w = 16 * 6;
+	  rect.h = 18;
+	  VIDEO_UpdateScreen(&rect);
       break;
 
    case kBattleUISelectTargetEnemyAll:
@@ -1755,6 +2022,10 @@ end:
          }
       }
    }
+   if (BACKvisable == TRUE)
+	   gUI_Buttom[buttomBACK].visable = TRUE;
+   else
+	   gUI_Buttom[buttomBACK].visable = FALSE;
 
    PAL_ClearKeyState();
 }

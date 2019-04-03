@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -488,88 +488,6 @@ PAL_MonsterChasePlayer(
    PAL_NPCWalkOneStep(wEventObjectID, wMonsterSpeed);
 }
 
-VOID
-PAL_AdditionalCredits(
-   VOID
-)
-/*++
-  Purpose:
-
-    Show the additional credits.
-
-  Parameters:
-
-    None.
-
-  Return value:
-
-    None.
-
---*/
-{
-   LPCWSTR rgszcps[][CP_MAX] = {
-	   // Traditional Chinese, Simplified Chinese
-	   { L"", L"", /*L""*/ },
-	   { L"         經典特別篇   ",
-	     L"         经典特别篇   ",
-	     //L"   \x30AF\x30E9\x30B7\x30C3\x30AF\x7279\x5225\x7DE8  "
-	   },
-	   { L"", L"", /*L""*/ },
-	   { L"", L"", /*L""*/ },
-	   { L"", L"", /*L""*/ },
-	   { L"", L"", /*L""*/ },
-	   { L"", L"", /*L""*/ },
-	   { L"", L"", /*L""*/ },
-	   { L"   本程式是自由軟體，按照 GNU General",
-	     L"   本程序是自由软件，按照 GNU General",
-		 //L" \x3053\x306E\x30D7\x30ED\x30B0\x30E9\x30E0\x306F\x81EA\x7531\x30BD\x30D5\x30C8\x30A6\x30A7\x30A2\x3067\x3059\x3001"
-	   },
-	   { L"   Public License v3 或更高版本發佈",
-	     L"   Public License v3 或更高版本发布",
-	     //L" GNU General Public License v3 \x306E\x4E0B\x3067"
-	   },
-	   { L"", L"", /*L" \x914D\x5E03\x3055\x308C\x3066\x3044\x307E\x3059\x3002"*/ },
-	   { L"                    ...按 Enter 結束",
-	     L"                    ...按 Enter 结束",
-	     //L"      ...Enter\x30AD\x30FC\x3092\x62BC\x3057\x3066\x7D42\x4E86\x3057\x307E\x3059"
-	   },
-   };
-
-   LPCWSTR rgszStrings[] = {
-      L"  SDLPAL (http://sdlpal.github.io/)",
-#ifdef PAL_CLASSIC
-	  L"%ls(" WIDETEXT(__DATE__) L")",
-#else
-	  L"                        (" WIDETEXT(__DATE__) L")",
-#endif
-      L" ",
-	  L"    (c) 2009-2011, Wei Mingzhi",
-	  L"        <whistler_wmz@users.sf.net>.",
-      L"    (c) 2011-2019, SDLPAL Team",
-	  L"%ls",  // Porting information line 1
-	  L"%ls",  // Porting information line 2
-	  L"%ls",  // GNU line 1
-	  L"%ls",  // GNU line 2
-	  L"%ls",  // GNU line 3
-      L"%ls",  // Press Enter to continue
-   };
-
-   int        i = 0;
-
-   PAL_DrawOpeningMenuBackground();
-
-   for (i = 0; i < 12; i++)
-   {
-      WCHAR buffer[48];
-      PAL_swprintf(buffer, sizeof(buffer) / sizeof(WCHAR), rgszStrings[i], gConfig.pszMsgFile ? g_rcCredits[i] : rgszcps[i][PAL_GetCodePage()]);
-      PAL_DrawText(buffer, PAL_XY(0, 2 + i * 16), DESCTEXT_COLOR, TRUE, FALSE, FALSE);
-   }
-
-   PAL_SetPalette(0, FALSE);
-   VIDEO_UpdateScreen(NULL);
-
-   PAL_WaitForKey(0);
-}
 
 static WORD
 PAL_InterpretInstruction(
@@ -949,18 +867,18 @@ PAL_InterpretInstruction(
       //
       // Remove item from inventory
       //
-      x = pScript->rgwOperand[1];
-      if (x == 0)
-      {
-         x = 1;
-      }
-      if (x <= PAL_CountItem(pScript->rgwOperand[0]) || pScript->rgwOperand[2] == 0)
-      {
-      if (!PAL_AddItemToInventory(pScript->rgwOperand[0], -x))
+      if (!PAL_AddItemToInventory(pScript->rgwOperand[0],
+         -((pScript->rgwOperand[1] == 0) ? 1 : pScript->rgwOperand[1])))
       {
          //
          // Try removing equipped item
          //
+         x = pScript->rgwOperand[1];
+         if (x == 0)
+         {
+            x = 1;
+         }
+
          for (i = 0; i <= gpGlobals->wMaxPartyMemberIndex; i++)
          {
             w = gpGlobals->rgParty[i].wPlayerRole;
@@ -980,10 +898,12 @@ PAL_InterpretInstruction(
                }
             }
          }
+
+         if (x > 0 && pScript->rgwOperand[2] != 0)
+         {
+            wScriptEntry = pScript->rgwOperand[2] - 1;
+         }
       }
-      }
-      else
-          wScriptEntry = pScript->rgwOperand[2] - 1;
       break;
 
    case 0x0021:
@@ -1345,7 +1265,8 @@ PAL_InterpretInstruction(
       i = ((pScript->rgwOperand[0] == kStatusSlow) ? 14 : 9);
 #endif
 
-      if (RandomLong(0, i) > gpGlobals->g.rgObject[w].enemy.wResistanceToSorcery)
+      if (RandomLong(0, i) >= gpGlobals->g.rgObject[w].enemy.wResistanceToSorcery &&
+         g_Battle.rgEnemy[wEventObjectID].rgwStatus[pScript->rgwOperand[0]] == 0)
       {
          g_Battle.rgEnemy[wEventObjectID].rgwStatus[pScript->rgwOperand[0]] = pScript->rgwOperand[1];
       }
@@ -1437,8 +1358,8 @@ PAL_InterpretInstruction(
 
          g_TextLib.iDialogShadow = 5;
          PAL_StartDialogWithOffset(kDialogCenterWindow, 0, 0, FALSE, 0, -10);
-         PAL_swprintf(s, sizeof(s) / sizeof(WCHAR), L"%ls@%ls@", PAL_GetWord(42),
-            PAL_GetWord(gpGlobals->g.lprgStore[0].rgwItems[i]));
+         PAL_swprintf(s, sizeof(s) / sizeof(WCHAR), L"%ls@%ls@", PAL_GetWord(42), PAL_GetWord(gpGlobals->g.lprgStore[0].rgwItems[i]));
+
          LPCBITMAPRLE pBG = PAL_SpriteGetFrame(gpSpriteUI, SPRITENUM_ITEMBOX);
          INT iBGWidth = PAL_RLEGetWidth(pBG), iBGHeight = PAL_RLEGetHeight(pBG);
          INT iBG_X = (320 - iBGWidth) / 2, iBG_Y = (200 - iBGHeight) / 2;
@@ -1506,7 +1427,7 @@ PAL_InterpretInstruction(
       //
       PAL_RNGPlay(gpGlobals->iCurPlayingRNG,
          pScript->rgwOperand[0],
-         pScript->rgwOperand[1] > 0 ? pScript->rgwOperand[1] : -1,
+         pScript->rgwOperand[1] > 0 ? pScript->rgwOperand[1] : 999,
          pScript->rgwOperand[2] > 0 ? pScript->rgwOperand[2] : 16);
       break;
 
@@ -2756,8 +2677,6 @@ PAL_InterpretInstruction(
       {
          w = 1;
       }
-      x = w + 1;
-      y = w;
 
       //division does not limited by original team layout
       for (i = 0; i < MAX_ENEMIES_IN_TEAM; i++)
@@ -2771,7 +2690,7 @@ PAL_InterpretInstruction(
 
             g_Battle.rgEnemy[i].wObjectID = g_Battle.rgEnemy[wEventObjectID].wObjectID;
             g_Battle.rgEnemy[i].e = g_Battle.rgEnemy[wEventObjectID].e;
-            g_Battle.rgEnemy[i].e.wHealth = (g_Battle.rgEnemy[wEventObjectID].e.wHealth+y)/x;
+            g_Battle.rgEnemy[i].e.wHealth = (g_Battle.rgEnemy[wEventObjectID].e.wHealth+w)/(w+1);
             g_Battle.rgEnemy[i].wScriptOnTurnStart = g_Battle.rgEnemy[wEventObjectID].wScriptOnTurnStart;
             g_Battle.rgEnemy[i].wScriptOnBattleEnd = g_Battle.rgEnemy[wEventObjectID].wScriptOnBattleEnd;
             g_Battle.rgEnemy[i].wScriptOnReady = g_Battle.rgEnemy[wEventObjectID].wScriptOnReady;
@@ -2779,16 +2698,9 @@ PAL_InterpretInstruction(
             g_Battle.rgEnemy[i].state = kFighterWait;
             g_Battle.rgEnemy[i].flTimeMeter = 50;
             g_Battle.rgEnemy[i].iColorShift = 0;
-
          }
       }
-      g_Battle.rgEnemy[wCurEventObjectID].e.wHealth = (g_Battle.rgEnemy[wEventObjectID].e.wHealth+y)/x;
-
-      w = 0;
-      for (i = 0; i < MAX_ENEMIES_IN_TEAM; i++)
-         if (g_Battle.rgEnemy[i].wObjectID != 0 )
-            w=i;
-      g_Battle.wMaxEnemyIndex = w;
+      g_Battle.rgEnemy[wCurEventObjectID].e.wHealth = (g_Battle.rgEnemy[wEventObjectID].e.wHealth+w)/(w+1);
 
       PAL_LoadBattleSprites();
 
@@ -2934,7 +2846,7 @@ PAL_InterpretInstruction(
       //
       if (gConfig.fIsWIN95)
          PAL_EndingScreen();
-      PAL_AdditionalCredits();
+      //PAL_AdditionalCredits();
       PAL_Shutdown(0);
       break;
 
@@ -3021,56 +2933,6 @@ PAL_InterpretInstruction(
    return wScriptEntry + 1;
 }
 
-PAL_FORCE_INLINE
-INT
-MESSAGE_GetSpan(
-    INT wScriptEntry
-)
-/*++
- Purpose:
-
- Get the final span of a message block which started from message index of wScriptEntry
- 
- Parameters:
- 
- [IN]  wScriptEntry - The script entry which starts the message block, must be a 0xffff command.
- 
- Return value:
- 
- The final span of the message block.
- 
- --*/
-{
-    int tmp_wScriptEntry = wScriptEntry;
-    int offset=0;
-
-    // ensure the command leads a new message block
-    assert(wScriptEntry > 0 &&
-           gpGlobals->g.lprgScriptEntry[wScriptEntry-1].wOperation != 0xFFFF &&
-           gpGlobals->g.lprgScriptEntry[wScriptEntry-1].wOperation != 0x008E );
-    // ensure the command is 0xFFFF
-    assert(gpGlobals->g.lprgScriptEntry[wScriptEntry].wOperation == 0xFFFF);
-
-    //
-    // If the NEXT command is 0xFFFF, but the message index is not continuous or not incremental,
-    // this MESSAGE block shoud end at THIS command.
-    //
-    if( gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry+1].wOperation == 0xFFFF && gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry+1].rgwOperand[0] != gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry].rgwOperand[0] + 1)
-        tmp_wScriptEntry++;
-    else
-        while (gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry].wOperation == 0xFFFF
-               || gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry].wOperation == 0x008E)
-        {
-            if(gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry].wOperation == 0x008E)
-                offset++;
-            if(gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry].wOperation == 0xFFFF)
-                offset=0;
-            tmp_wScriptEntry++;
-        }
-
-    return gpGlobals->g.lprgScriptEntry[tmp_wScriptEntry-offset-1].rgwOperand[0] - gpGlobals->g.lprgScriptEntry[wScriptEntry].rgwOperand[0];
-}
-
 WORD
 PAL_RunTriggerScript(
    WORD           wScriptEntry,
@@ -3102,6 +2964,10 @@ PAL_RunTriggerScript(
    int               i;
 
    extern BOOL       g_fUpdatedInBattle; // HACKHACK
+
+   BOOL mainmenu_status = gUI_Buttom[buttomMENU].visable;
+   gUI_Buttom[buttomMENU].visable = FALSE;
+   gpGlobals->dwUI_Game |= 0x100;
 
    wNextScriptEntry = wScriptEntry;
    fEnded = FALSE;
@@ -3207,6 +3073,7 @@ PAL_RunTriggerScript(
 
          if (PAL_DialogIsPlayingRNG())
          {
+			 if (gpScreen240) gDraw240 = TRUE;
             VIDEO_RestoreScreen(gpScreen);
          }
          else if (gpGlobals->fInBattle)
@@ -3365,6 +3232,7 @@ PAL_RunTriggerScript(
          // Restore the screen
          //
          PAL_ClearDialog(TRUE);
+		 if (gpScreen240) gDraw240 = TRUE;
          VIDEO_RestoreScreen(gpScreen);
          VIDEO_UpdateScreen(NULL);
          wScriptEntry++;
@@ -3376,9 +3244,8 @@ PAL_RunTriggerScript(
          //
          if (gConfig.pszMsgFile)
          {
-            int msgSpan = MESSAGE_GetSpan(wScriptEntry);
             int idx = 0, iMsg;
-            while ((iMsg = PAL_GetMsgNum(pScript->rgwOperand[0], msgSpan, idx++)) >= 0)
+            while ((iMsg = PAL_GetMsgNum(pScript->rgwOperand[0], idx++)) >= 0)
 			{
                if (iMsg == 0)
                {
@@ -3386,6 +3253,7 @@ PAL_RunTriggerScript(
                   // Restore the screen
                   //
                   PAL_ClearDialog(TRUE);
+				  if (gpScreen240) gDraw240 = TRUE;
                   VIDEO_RestoreScreen(gpScreen);
                   VIDEO_UpdateScreen(NULL);
                }
@@ -3421,6 +3289,8 @@ PAL_RunTriggerScript(
    PAL_EndDialog();
    g_iCurEquipPart = -1;
 
+   gpGlobals->dwUI_Game &= (0xffffffff - 0x100);
+   gUI_Buttom[buttomMENU].visable = mainmenu_status;
    return wNextScriptEntry;
 }
 
@@ -3555,9 +3425,8 @@ begin:
 
 		   if (gConfig.pszMsgFile)
 		   {
-               int msgSpan = MESSAGE_GetSpan(wScriptEntry);
 			   int idx = 0, iMsg;
-			   while ((iMsg = PAL_GetMsgNum(pScript->rgwOperand[0], msgSpan, idx++)) >= 0)
+			   while ((iMsg = PAL_GetMsgNum(pScript->rgwOperand[0], idx++)) >= 0)
 			   {
 				   if (iMsg > 0)
 				   {

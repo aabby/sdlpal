@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -141,8 +141,20 @@ typedef struct tagMENUITEM
    WORD          wNumWord;
    BOOL          fEnabled;
    PAL_POS       pos;
+   PAL_POS       size;
 } MENUITEM, *LPMENUITEM;
-typedef const MENUITEM* LPCMENUITEM;
+typedef MENUITEM* LPCMENUITEM;
+
+
+typedef struct tagMENUMOUSECTRL
+{
+	MENUITEM * MenuItem;
+	WORD Click;
+	int Select;
+	int LastSelect;
+	int Count;
+} MENUMOUSECTRL;
+extern volatile MENUMOUSECTRL g_MenuCtrl;
 
 typedef struct tagOBJECTDESC
 {
@@ -151,9 +163,30 @@ typedef struct tagOBJECTDESC
    struct tagOBJECTDESC       *next;
 } OBJECTDESC, *LPOBJECTDESC;
 
+typedef struct tagLISTMENU
+{
+	BOOL fDoUpdate;
+	SDL_Surface * ListScreen;
+	SDL_Rect srcrng;
+	SDL_Rect dstrng;
+
+	WORD wClick;
+	int* iSelect;
+	int* iCount;
+	int iItemsPerLine;
+	int iLinesPerPage;
+	int iItemTextWidth;
+
+	int iShiftY;
+	int iVectorY;
+
+} LISTMENU;
+extern volatile LISTMENU g_ListMenu;
+
 typedef VOID (*LPITEMCHANGED_CALLBACK)(WORD);
 
 #define MENUITEM_VALUE_CANCELLED      0xFFFF
+#define MENUITEM_VALUE_RESET      0xFFFE
 
 typedef enum tagNUMCOLOR
 {
@@ -275,6 +308,21 @@ PAL_GetObjectDesc(
    LPOBJECTDESC   lpObjectDesc,
    WORD           wObjectID
 );
+VOID
+PAL_AdditionalCredits(
+	VOID
+);
+void Setup_MenuCtrl(MENUITEM * rgMenuItem, int count, int select);
+
+void ListMenuOpen(int *selectitem, int *itemCount, int x, int y, int iItemsPerLine, int iLinesPerPage, int iItemTextWidth);
+
+void ListMenuClose();
+
+void ListMenuUpdate();
+
+void ListMenu_MouseEvent(int mx, int my, Uint32 status);
+
+void ListMenu_GoTpFocus();
 
 extern LPSPRITE gpSpriteUI;
 

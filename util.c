@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -287,7 +287,7 @@ UTIL_Delay(
 )
 {
    unsigned int t = SDL_GetTicks() + ms;
-
+   Setup_MenuCtrl(NULL, 0, 0);
    PAL_ProcessEvent();
 
    while (!SDL_TICKS_PASSED(SDL_GetTicks(), t))
@@ -969,11 +969,31 @@ inline char* stoupper(char* s)
 	return p1;
 }
 PAL_C_LINKAGE char* strcasestr(const char *a, const char *b) {
-	const char *a1 = stoupper(a);
-	const char *b1 = stoupper(b);
+	const char *a1 = stoupper((char *)a);
+	const char *b1 = stoupper((char *)b);
 	char *ptr = strstr(a1, b1);
-	free(a1);
-	free(b1);
+	free((void*)a1);
+	free((void*)b1);
 	return ptr;
 }
 #endif
+
+
+SDL_Surface * UTIL_LoadBMP(LPCSTR file)
+{
+	const char *tmp = UTIL_GetFullPathName(INTERNAL_BUFFER_SIZE_ARGS, gConfig.pszGamePath, "pic");
+	if (tmp == NULL)
+		return NULL;
+	char *imgpath = malloc(strlen(tmp) + 1);
+	strcpy(imgpath, tmp);
+
+	if (file)
+	{
+		tmp = UTIL_GetFullPathName(INTERNAL_BUFFER_SIZE_ARGS, imgpath, file);
+		if (tmp)
+		{
+			return SDL_LoadBMP(tmp);
+		}
+	}
+	return NULL;
+}

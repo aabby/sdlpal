@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -23,6 +23,7 @@
 #include "palcommon.h"
 #include "global.h"
 #include "palcfg.h"
+#include "video.h"
 
 BYTE
 PAL_CalcShadowColor(
@@ -71,6 +72,16 @@ PAL_RLEBlitToSurfaceWithShadow(
 
 --*/
 {
+	BOOL draw240 = FALSE;
+	if (gDraw240 && lpDstSurface == gpScreen)
+	{
+		lpDstSurface = gpScreen240;
+		draw240 = TRUE;
+	}
+	else if (g_ListMenu.fDoUpdate && lpDstSurface == gpScreen)
+	{
+		lpDstSurface = g_ListMenu.ListScreen;
+	}
    UINT          i, j;
    INT           x, y;
    UINT          uiLen       = 0;
@@ -158,8 +169,13 @@ PAL_RLEBlitToSurfaceWithShadow(
             //
             // Put the pixel onto the surface (FIXME: inefficient).
             //
-            if(bShadow)
-               ((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = PAL_CalcShadowColor(((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x]);
+			if (bShadow)
+			{
+				if (draw240)
+					((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = 0xF0;
+				else
+					((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = PAL_CalcShadowColor(((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x]);
+			}
             else
                ((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = lpBitmapRLE[j];
          }

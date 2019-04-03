@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -35,8 +35,6 @@
 #define   FONT_COLOR_RED_ALT        0x17
 
 BOOL      g_fUpdatedInBattle      = FALSE;
-
-static wchar_t internal_wbuffer[PAL_GLOBAL_BUFFER_SIZE];
 
 #define   MESSAGE_MAX_BUFFER_SIZE   512
 
@@ -167,7 +165,6 @@ PAL_ReadMessageFile(
 		struct _msg_list_entry *next;
 		struct _msg_entry *value;
 		int index;
-		int indexEnd;
 		int count;
 	} *head = NULL, *item = NULL;
 	struct _word_list_entry
@@ -218,7 +215,7 @@ PAL_ReadMessageFile(
 							head = (struct _msg_list_entry *)UTIL_malloc(sizeof(struct _msg_list_entry));
 							item = head;
 						}
-						item->value = NULL; item->index = sid; item->indexEnd = sid;
+						item->value = NULL; item->index = sid;
 						item->count = 0; item->next = NULL; cur_val = NULL;
 						if (idx_cnt < item->index) idx_cnt = item->index;
 					}
@@ -263,7 +260,6 @@ PAL_ReadMessageFile(
 				{
 					// End dialog
 					state = ST_OUTSIDE;
-					item->indexEnd = eid;
 				}
 				else
 				{
@@ -558,61 +554,27 @@ PAL_ReadMessageFile(
 		int idx_msg = 1;
 		g_TextLib.nIndices = (idx_cnt += 1);
 		g_TextLib.nMsgs = (msg_cnt += 1);
-		g_TextLib.lpIndexBuf = (int ***)UTIL_calloc(idx_cnt, sizeof(int **));
+		g_TextLib.lpIndexBuf = (int **)UTIL_calloc(idx_cnt, sizeof(int *));
 		g_TextLib.lpMsgBuf = (LPWSTR *)UTIL_calloc(msg_cnt, sizeof(LPWSTR));
-		g_TextLib.indexMaxCounter = (int *)UTIL_calloc(idx_cnt, sizeof(int *));
-		// The variable indexMaxCounter stores the value of (item->indexEnd - item->index), 
-		// which means the span between eid and sid. 
-
 		for (item = head; item; )
 		{
 			struct _msg_list_entry *temp = item->next;
 			struct _msg_entry *msg = item->value;
 			int index = 0;
-			if (g_TextLib.lpIndexBuf[item->index])
-			{
-				//
-				// If a MESSAGE with this sid exists, we firstly determine whether a larger block of memory is needed to store msgSpan data. 
-				//
-				if ((item->indexEnd - item->index + 1) > g_TextLib.indexMaxCounter[item->index])
-				{
-					int oldCount = g_TextLib.indexMaxCounter[item->index];
-					g_TextLib.lpIndexBuf[item->index] = (int **)realloc(g_TextLib.lpIndexBuf[item->index], sizeof(int *) * (item->indexEnd - item->index + 1));
-					// Update the corrisponding data in indexMaxCounter. 
-					g_TextLib.indexMaxCounter[item->index] = item->indexEnd - item->index + 1;
-					// Clear the new allocated blocks; avoid it was then freed as pointer without actual being allocated.
-					memset(&g_TextLib.lpIndexBuf[item->index][oldCount], 0, sizeof(int**)*(g_TextLib.indexMaxCounter[item->index] - oldCount));
-				}
-			}else{
-				// It is a new MESSAGE. Give it a block of memory to store msgSpan data. 
-				g_TextLib.lpIndexBuf[item->index] = (int **)UTIL_calloc((item->indexEnd - item->index + 1), sizeof(int *));
-				// Update the corrisponding data in indexMaxCounter. 
-				g_TextLib.indexMaxCounter[item->index] = item->indexEnd - item->index + 1;
-
-			}
-			//
-			// If a duplicate MESSAGE appears, free the memory used by the previous one to avoid memory leak. 
-			//
-			if (g_TextLib.lpIndexBuf[item->index][item->indexEnd - item->index] != NULL)
-			{
-				free(g_TextLib.lpIndexBuf[item->index][item->indexEnd - item->index]);
-			}
-
-			g_TextLib.lpIndexBuf[item->index][item->indexEnd - item->index] = (int *)UTIL_calloc((item->count + 1), sizeof(int));
-
+			g_TextLib.lpIndexBuf[item->index] = (int *)UTIL_calloc(item->count + 1, sizeof(int));
 			while (msg)
 			{
 				struct _msg_entry *tmp = msg->next;
 				if (msg->value)
 				{
-					g_TextLib.lpIndexBuf[item->index][item->indexEnd - item->index][index++] = idx_msg;
+					g_TextLib.lpIndexBuf[item->index][index++] = idx_msg;
 					g_TextLib.lpMsgBuf[idx_msg++] = msg->value;
 				}
 				else
-					g_TextLib.lpIndexBuf[item->index][item->indexEnd - item->index][index++] = 0;
+					g_TextLib.lpIndexBuf[item->index][index++] = 0;
 				free(msg); msg = tmp;
 			}
-			g_TextLib.lpIndexBuf[item->index][item->indexEnd - item->index][item->count] = -1;
+			g_TextLib.lpIndexBuf[item->index][item->count] = -1;
 			free(item); item = temp;
 		}
 	}
@@ -691,7 +653,7 @@ PAL_InitText(
 		   {
 			   if (g_TextLib.lpWordBuf[i])
 			   {
-				   LPWSTR ptr = PAL_UnescapeText( g_TextLib.lpWordBuf[i] );
+				   LPWSTR ptr = g_TextLib.lpWordBuf[i];
 				   DWORD n = 0;
 				   while (*ptr) n += PAL_CharWidth(*ptr++) >> 3;
 				   if (dwWordLength < n) dwWordLength = n;
@@ -914,7 +876,6 @@ PAL_FreeText(
 --*/
 {
    int i;
-   int j;
    if (g_TextLib.lpMsgBuf != NULL)
    {
       if (gConfig.pszMsgFile)
@@ -936,29 +897,10 @@ PAL_FreeText(
    if (g_TextLib.lpIndexBuf != NULL)
    {
       if (gConfig.pszMsgFile)
-      {
-         for(i = 0; i < g_TextLib.nIndices; i++)
-         {
-            if (g_TextLib.lpIndexBuf[i] != NULL)
-            {
-               for(j = 0; j < g_TextLib.indexMaxCounter[i]; j++)
-               {
-                  if (g_TextLib.lpIndexBuf[i][j] != NULL)
-                  {
-                     free(g_TextLib.lpIndexBuf[i][j]);
-                     g_TextLib.lpIndexBuf[i][j] = NULL;
-                  }
-               }
-               free(g_TextLib.lpIndexBuf[i]);
-               g_TextLib.lpIndexBuf[i] = NULL;
-            }
-         }
-      }else{
+         for(i = 0; i < g_TextLib.nIndices; i++) free(g_TextLib.lpIndexBuf[i]);
+      else
          free(g_TextLib.lpIndexBuf[0]);
-      }
       free(g_TextLib.lpIndexBuf);
-      free(g_TextLib.indexMaxCounter);
-
       g_TextLib.lpIndexBuf = NULL;
    }
 }
@@ -982,6 +924,28 @@ PAL_GetWord(
 
 --*/
 {
+	static wchar_t ctext[255];
+	if (iNumWord > 0x6FFF)
+	{
+		ctext[0] = 0; ctext[1] = 0;
+		int id = iNumWord - 0x6FFF;
+		switch (id)
+		{
+		case 1:
+		{
+			CHAR text[13] = { 0xBD,0xD0, 0xBF,0xEF, 0xBE,0xDC, 0xB9,0xEF, 0xB6,0x48, 0xA1,0x47, 0 }; //select target
+			PAL_MultiByteToWideChar((LPCSTR)text, -1, ctext, 24);
+		}
+		break;
+		case LOADMENU_LABEL_SLOT_FIRST:
+		{
+			CHAR text[10] = { 0xA6, 0xDB, 0xB0, 0xCA, 0xA6, 0x73, 0xC0, 0xC9, 0 ,0 }; //auto save
+			PAL_MultiByteToWideChar((LPCSTR)text, -1, ctext, 20);
+		}
+		break;
+		}
+		return (LPCWSTR)ctext;
+	}
    return (iNumWord >= g_TextLib.nWords || !g_TextLib.lpWordBuf[iNumWord]) ? L"" : g_TextLib.lpWordBuf[iNumWord];
 }
 
@@ -1010,7 +974,6 @@ PAL_GetMsg(
 int
 PAL_GetMsgNum(
    int        iIndex,
-   int        iSpan,
    int        iOrder
 )
 /*++
@@ -1021,7 +984,6 @@ PAL_GetMsgNum(
   Parameters:
 
     [IN]  iMsgIndex - index.
-	[IN]  iSpan - span bwtween eid and sid.
 	[IN]  iOrder - order inside the index.
 
   Return value:
@@ -1030,46 +992,7 @@ PAL_GetMsgNum(
 
 --*/
 {
-   assert(iIndex>=0);
-   assert(iSpan>=0);
-   assert(iOrder>=0);
-   return (iIndex >= g_TextLib.nMsgs || iSpan >= g_TextLib.indexMaxCounter[iIndex] || !g_TextLib.lpIndexBuf[iIndex] || !g_TextLib.lpIndexBuf[iIndex][iSpan]) ? -1 : g_TextLib.lpIndexBuf[iIndex][iSpan][iOrder];
-}
-
-LPWSTR
-PAL_UnescapeText(
-   LPCWSTR    lpszText
-)
-{
-   WCHAR *buf = internal_wbuffer;
-   
-   if(wcsstr(lpszText, L"\\") == NULL)
-      return (LPWSTR)lpszText;
-   
-   memset(internal_wbuffer, 0, sizeof(internal_wbuffer));
-
-   while (*lpszText != L'\0')
-   {
-      switch (*lpszText)
-      {
-         case '-':
-         case '\'':
-         case '@':
-         case '\"':
-         case '$':
-         case '~':
-         case ')':
-         case '(':
-            lpszText++;
-            break;
-         case '\\':
-            lpszText++;
-         default:
-            wcsncpy(buf++, lpszText++, 1);
-            break;
-      }
-   }
-   return internal_wbuffer;
+   return (iIndex >= g_TextLib.nMsgs || !g_TextLib.lpIndexBuf[iIndex]) ? -1 : g_TextLib.lpIndexBuf[iIndex][iOrder];
 }
 
 VOID
@@ -1080,20 +1003,6 @@ PAL_DrawText(
    BOOL       fShadow,
    BOOL       fUpdate,
    BOOL       fUse8x8Font
-)
-{
-    PAL_DrawTextUnescape(lpszText, pos, bColor, fShadow, fUpdate, fUse8x8Font, TRUE);
-}
-
-VOID
-PAL_DrawTextUnescape(
-   LPCWSTR    lpszText,
-   PAL_POS    pos,
-   BYTE       bColor,
-   BOOL       fShadow,
-   BOOL       fUpdate,
-   BOOL       fUse8x8Font,
-   BOOL       fUnescape
 )
 /*++
   Purpose:
@@ -1112,10 +1021,8 @@ PAL_DrawTextUnescape(
 
     [IN]  fUpdate - TRUE if update the screen area.
 
-    [IN]  fUse8x8Font - TRUE if use 8x8 font.
+	[IN]  fUse8x8Font - TRUE if use 8x8 font.
 
-    [IN]  fUnescape - TRUE if unescaping needed.
- 
   Return value:
 
     None.
@@ -1123,7 +1030,21 @@ PAL_DrawTextUnescape(
 --*/
 {
    SDL_Rect   rect, urect;
+   SDL_Surface *screen = gpScreen;
+   BOOL Draw240 = gDraw240;
 
+   if (g_ListMenu.fDoUpdate == TRUE)
+   {
+	   screen = g_ListMenu.ListScreen;
+	   if (bColor == 1)
+		   bColor = 0;
+   }
+   else if (gDraw240)
+   {
+	   screen = gpScreen240;
+	   if (bColor == 1)
+		   bColor = 0;
+   }
    urect.x = rect.x = PAL_X(pos);
    urect.y = rect.y = PAL_Y(pos);
    urect.h = (fUse8x8Font ? 8 : PAL_FontHeight()) + (fShadow ? 1 : 0);
@@ -1132,22 +1053,19 @@ PAL_DrawTextUnescape(
    // Handle text overflow
    if (rect.x >= 320) return;
 
-   if(fUnescape)
-      lpszText = PAL_UnescapeText(lpszText);
-
    while (*lpszText)
    {
       //
       // Draw the character
       //
 	  int char_width = fUse8x8Font ? 8 : PAL_CharWidth(*lpszText);
-
+	  
       if (fShadow)
       {
-		  PAL_DrawCharOnSurface(*lpszText, gpScreen, PAL_XY(rect.x + 1, rect.y + 1), 0, fUse8x8Font);
-		  PAL_DrawCharOnSurface(*lpszText, gpScreen, PAL_XY(rect.x + 1, rect.y), 0, fUse8x8Font);
+		  PAL_DrawCharOnSurface(*lpszText, screen, PAL_XY(rect.x + 1, rect.y + 1), 0, fUse8x8Font);
+		  PAL_DrawCharOnSurface(*lpszText, screen, PAL_XY(rect.x + 1, rect.y), 0, fUse8x8Font);
       }
-	  PAL_DrawCharOnSurface(*lpszText++, gpScreen, PAL_XY(rect.x, rect.y), bColor, fUse8x8Font);
+	  PAL_DrawCharOnSurface(*lpszText++, screen, PAL_XY(rect.x, rect.y), bColor, fUse8x8Font);
 	  rect.x += char_width; urect.w += char_width;
    }
 
@@ -1161,7 +1079,9 @@ PAL_DrawTextUnescape(
       {
          urect.w = 320 - urect.x;
       }
+	  
       VIDEO_UpdateScreen(&urect);
+	  gDraw240 = Draw240;
    }
 }
 
@@ -1253,6 +1173,7 @@ PAL_StartDialogWithOffset(
 
    if (fPlayingRNG && iNumCharFace)
    {
+	   if (gpScreen240) gDraw240 = TRUE;
       VIDEO_BackupScreen(gpScreen);
       g_TextLib.fPlayingRNG = TRUE;
    }
@@ -1388,6 +1309,8 @@ PAL_DialogWaitForKeyWithMaximumSeconds(
 
    PAL_ClearKeyState();
 
+   gpGlobals->dwUI_Game |= 1;
+
    while (TRUE)
    {
       UTIL_Delay(100);
@@ -1419,6 +1342,8 @@ PAL_DialogWaitForKeyWithMaximumSeconds(
       }
    }
 
+   gpGlobals->dwUI_Game &= (0xffffffff - 1);
+
    if (g_TextLib.bDialogPosition != kDialogCenterWindow &&
       g_TextLib.bDialogPosition != kDialogCenter)
    {
@@ -1438,7 +1363,7 @@ PAL_DialogWaitForKey(
    PAL_DialogWaitForKeyWithMaximumSeconds(0);
 }
 
-int
+static int
 TEXT_DisplayText(
    LPCWSTR        lpszText,
    int            x,
@@ -1574,7 +1499,7 @@ TEXT_DisplayText(
             if( isNumber )
                PAL_DrawNumber(text[0]-'0', 1, PAL_XY(x, y+4), kNumColorYellow, kNumAlignLeft);
             else
-               PAL_DrawTextUnescape(text, PAL_XY(x, y), color, !isDialog, !isDialog && !g_TextLib.fUserSkip, FALSE, FALSE);
+               PAL_DrawText(text, PAL_XY(x, y), color, !isDialog, !isDialog && !g_TextLib.fUserSkip, FALSE);
             x += PAL_CharWidth(text[0]);
             
             if (!isDialog && !g_TextLib.fUserSkip)
@@ -1615,7 +1540,7 @@ PAL_ShowDialogText(
 --*/
 {
    SDL_Rect        rect;
-   int             x, y;
+   int             x, y, y240;
 
    PAL_ClearKeyState();
    g_TextLib.bIcon = 0;
@@ -1636,12 +1561,19 @@ PAL_ShowDialogText(
       //
       PAL_DialogWaitForKey();
       g_TextLib.nCurrentDialogLine = 0;
+	  if (gpScreen240) gDraw240 = TRUE;
       VIDEO_RestoreScreen(gpScreen);
       VIDEO_UpdateScreen(NULL);
    }
 
    x = PAL_X(g_TextLib.posDialogText);
    y = PAL_Y(g_TextLib.posDialogText) + g_TextLib.nCurrentDialogLine * 18;
+
+   if (gpScreen240)
+   {
+	   gDraw240 = TRUE;
+		y240 = y + (int)((float)y*0.2f);
+   }
 
    if (g_TextLib.bDialogPosition == kDialogCenterWindow)
    {
@@ -1659,7 +1591,7 @@ PAL_ShowDialogText(
          PAL_POS    pos;
          LPBOX      lpBox;
 		 int        i, w = wcslen(lpszText), len = 0;
-
+		 if (gpScreen240) gDraw240 = TRUE;
 		 for (i = 0; i < w; i++)
             len += PAL_CharWidth(lpszText[i]) >> 3;
          //
@@ -1705,6 +1637,7 @@ PAL_ShowDialogText(
          //
          // name of character
          //
+		  if (gpScreen240) gDraw240 = TRUE;
          PAL_DrawText(lpszText, g_TextLib.posDialogTitle, FONT_COLOR_CYAN_ALT, TRUE, TRUE, FALSE);
       }
       else
@@ -1714,9 +1647,10 @@ PAL_ShowDialogText(
             //
             // Save the screen before we show the first line of dialog
             //
+			 if (gpScreen240) gDraw240 = TRUE;
             VIDEO_BackupScreen(gpScreen);
          }
-         
+		 if (gpScreen240) gDraw240 = TRUE;
          x = TEXT_DisplayText(lpszText, x, y, FALSE);
 
 		 // and update the full screen at once after all texts are drawn
@@ -1764,6 +1698,11 @@ PAL_ClearDialog(
       g_TextLib.bCurrentFontColor = FONT_COLOR_DEFAULT;
       g_TextLib.bDialogPosition = kDialogUpper;
    }
+   if (gpScreen240 != NULL)
+   {
+	   memset(gpScreen240->pixels, 1, 320 * 240);
+	   memset(gpScreenReal240->pixels, 0, 320 * 240 * 4);
+   }
 }
 
 VOID
@@ -1797,6 +1736,7 @@ PAL_EndDialog(
    g_TextLib.bDialogPosition = kDialogUpper;
    g_TextLib.fUserSkip = FALSE;
    g_TextLib.fPlayingRNG = FALSE;
+   VIDEO_Clean240();
 }
 
 BOOL

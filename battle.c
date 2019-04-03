@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -50,11 +50,10 @@ PAL_BattleMakeScene(
 
 --*/
 {
-   int          i,j;
+   int          i;
    PAL_POS      pos;
    LPBYTE       pSrc, pDst;
    BYTE         b;
-   INT          enemyDrawSeq[MAX_ENEMIES_IN_TEAM];
 
    //
    // Draw the background
@@ -84,24 +83,11 @@ PAL_BattleMakeScene(
 
    PAL_ApplyWave(g_Battle.lpSceneBuf);
 
-   memset(&enemyDrawSeq,-1,sizeof(enemyDrawSeq));
-   // sort by y
-   for (i = 0; i <= g_Battle.wMaxEnemyIndex; i++ )
-      enemyDrawSeq[i] = i;
-   for(i=0;i<g_Battle.wMaxEnemyIndex;i++)
-       for(j=i+1;j<g_Battle.wMaxEnemyIndex;j++)
-           if( PAL_Y(g_Battle.rgEnemy[i].pos) < PAL_Y(g_Battle.rgEnemy[j].pos) ) {
-               INT tmp = enemyDrawSeq[i];
-               enemyDrawSeq[i]=enemyDrawSeq[j];
-               enemyDrawSeq[j]=tmp;
-           }
-
    //
    // Draw the enemies
    //
-   for (j = g_Battle.wMaxEnemyIndex; j >= 0; j--)
+   for (i = g_Battle.wMaxEnemyIndex; i >= 0; i--)
    {
-      i = enemyDrawSeq[j];
       pos = g_Battle.rgEnemy[i].pos;
 
       if (g_Battle.rgEnemy[i].rgwStatus[kStatusConfused] > 0 &&
@@ -191,10 +177,7 @@ PAL_BattleMakeScene(
             //
             // Player is confused
             //
-            int xd = PAL_X(g_Battle.rgPlayer[i].pos), yd = PAL_Y(g_Battle.rgPlayer[i].pos);
-            if(!PAL_IsPlayerDying(gpGlobals->rgParty[i].wPlayerRole))
-               yd += RandomLong(-1, 1);
-            pos = PAL_XY(xd, yd);
+            pos = PAL_XY(PAL_X(g_Battle.rgPlayer[i].pos), PAL_Y(g_Battle.rgPlayer[i].pos) + RandomLong(-1, 1));
             pos = PAL_XY(PAL_X(pos) - PAL_RLEGetWidth(PAL_SpriteGetFrame(g_Battle.rgPlayer[i].lpSprite, g_Battle.rgPlayer[i].wCurrentFrame)) / 2,
                PAL_Y(pos) - PAL_RLEGetHeight(PAL_SpriteGetFrame(g_Battle.rgPlayer[i].lpSprite, g_Battle.rgPlayer[i].wCurrentFrame)));
 
@@ -662,7 +645,7 @@ PAL_BattleWon(
    gpGlobals->dwCash += g_Battle.iCashGained;
 
     
-    const MENUITEM      rgFakeMenuItem[] =
+    MENUITEM      rgFakeMenuItem[] =
     {
         // value  label                        enabled   pos
         { 1,      gpGlobals->g.PlayerRoles.rgwName[0],    TRUE,     PAL_XY(0, 0) },
@@ -673,7 +656,7 @@ PAL_BattleWon(
         { 6,      gpGlobals->g.PlayerRoles.rgwName[5],    TRUE,     PAL_XY(0, 0) },
     };
     int maxNameWidth = PAL_MenuTextMaxWidth(rgFakeMenuItem, sizeof(rgFakeMenuItem) / sizeof(MENUITEM));
-    const MENUITEM      rgFakeMenuItem2[] =
+    MENUITEM      rgFakeMenuItem2[] =
     {
         // value  label                        enabled   pos
         { 1,      STATUS_LABEL_LEVEL,          TRUE,     PAL_XY(0, 0) },
@@ -1153,6 +1136,9 @@ PAL_StartBattle(
    WORD           w, wPrevWaveLevel;
    SHORT          sPrevWaveProgression;
 
+   BOOL mainmenu_status = gUI_Buttom[buttomMENU].visable;
+   gUI_Buttom[buttomMENU].visable = FALSE;
+   gpGlobals->dwUI_Game |= 0x80;
    //
    // Set the screen waving effects
    //
@@ -1393,13 +1379,18 @@ PAL_StartBattle(
    g_Battle.fForce = FALSE;
    g_Battle.fFlee = FALSE;
    g_Battle.fPrevAutoAtk = FALSE;
-   g_Battle.fThisTurnCoop = FALSE;
 #endif
 
+   BackupBACK();
    //
    // Run the main battle routine.
    //
    i = PAL_BattleMain();
+
+
+	RestoreBACK();
+	gUI_Buttom[buttomMagic].KeyClick = FALSE;
+   gUI_Buttom[buttomBACK].visable = FALSE;
 
    if (i == kBattleResultWon)
    {
@@ -1407,6 +1398,7 @@ PAL_StartBattle(
       // Player won the battle. Add the Experience points.
       //
       PAL_BattleWon();
+	  gpGlobals->fDoAutoSave = TRUE;
    }
 
    //
@@ -1451,6 +1443,9 @@ PAL_StartBattle(
    //
    gpGlobals->sWaveProgression = sPrevWaveProgression;
    gpGlobals->wScreenWave = wPrevWaveLevel;
+
+   gUI_Buttom[buttomMENU].visable = mainmenu_status;
+   gpGlobals->dwUI_Game &= (0xffffffff - 0x80);
 
    return i;
 }

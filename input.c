@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -23,7 +23,28 @@
 #include "main.h"
 #include <math.h>
 
+INT omousex, omousey;
+INT mousex, mousey, mousey240;
+BOOL mouseLkey, mouseRkey, mouseMkey;
+
+extern float gpScreenW_Magnification;
+extern float gpScreenH_Magnification;
+extern float gpScreenH_Magnification240;
+extern float gpScreenW_MagnificationOriginal;
+extern float gpScreenH_MagnificationOriginal;
+extern float gpScreenH_MagnificationOriginal240;
+extern SDL_Rect           gViewRect;
+extern DWORD g_dwScreenWidth;
+extern DWORD g_dwScreenHeight;
+
 volatile PALINPUTSTATE   g_InputState;
+
+UINT32   lastReleaseMLButtonTime = 0, lastPressMLButtonTime = 0;
+INT mouseKeyPosX = 0, mouseKeyPosY = 0, mouseKeyPosY240 = 0;
+
+BOOL TouchFlag = FALSE;
+
+
 #if PAL_HAS_JOYSTICKS
 static SDL_Joystick     *g_pJoy = NULL;
 #endif
@@ -91,7 +112,7 @@ static const int g_KeyMap[][2] = {
    { SDLK_s,         kKeyStatus }
 };
 
-static VOID
+VOID
 PAL_KeyDown(
    INT         key,
    BOOL        fRepeat
@@ -155,7 +176,7 @@ PAL_KeyDown(
    }
 }
 
-static VOID
+VOID
 PAL_KeyUp(
    INT         key
 )
@@ -353,11 +374,10 @@ PAL_MouseEventFilter(
 {
 #if PAL_HAS_MOUSE
    static short hitTest = 0; // Double click detect;   
-   const SDL_VideoInfo *vi;
 
    double       screenWidth, gridWidth;
    double       screenHeight, gridHeight;
-   double       mx, my;
+   double       mx, my, my240;
    double       thumbx;
    double       thumby;
    INT          gridIndex;
@@ -370,18 +390,227 @@ PAL_MouseEventFilter(
    static INT   lastReleasex = 0;
    static INT   lastReleasey = 0;
 
-   if (lpEvent->type!= SDL_MOUSEBUTTONDOWN && lpEvent->type != SDL_MOUSEBUTTONUP)
-      return;
+   if (lpEvent->type == SDL_MOUSEMOTION || lpEvent->type == SDL_MOUSEBUTTONDOWN || lpEvent->type == SDL_MOUSEBUTTONUP)
+   {
+	   mx = (lpEvent->button.x - gViewRect.x) * gpScreenW_MagnificationOriginal;
+	   my = (lpEvent->button.y - gViewRect.y) * gpScreenH_MagnificationOriginal;
+	   my240 = (lpEvent->button.y - gViewRect.y) * gpScreenH_MagnificationOriginal240;
+	   mousex = omousex = mx;
+	   mousey = omousey = my;
+	   mousey240 = my240;
+	   if (mousex > 319) mousex = 319;
+	   if (mousey > 199) mousey = 199;
+	   if (mousey240 > 239) mousey240 = 239;
+   }
 
-   vi = SDL_GetVideoInfo();
-   screenWidth = vi->current_w;
-   screenHeight = vi->current_h;
-   gridWidth = screenWidth / 3;
-   gridHeight = screenHeight / 3;
-   mx = lpEvent->button.x;
-   my = lpEvent->button.y;
-   thumbx = ceil(mx / gridWidth);
-   thumby = floor(my / gridHeight);
+   if (lpEvent->type == SDL_MOUSEBUTTONDOWN)
+   {
+	   if (lpEvent->button.button == 1)
+	   {
+		   mouseLkey = TRUE;
+		   lastPressMLButtonTime = SDL_GetTicks();
+		   lastReleaseMLButtonTime = 0;
+		   mouseKeyPosX = mousex;
+		   mouseKeyPosY = mousey;
+	   }
+	   else if (lpEvent->button.button == 3)
+		   mouseRkey = TRUE;
+	   else if (lpEvent->button.button == 2)
+		   mouseMkey = TRUE;
+   }
+   if (lpEvent->type == SDL_MOUSEBUTTONUP)
+   {
+	   if (lpEvent->button.button == 1)
+	   {
+		   if (gpGlobals->dwUI_Game == 2) //player control
+		   {
+			   if (mouseKeyPosX != -100 && (SDL_GetTicks() - lastPressMLButtonTime) <= 300)
+				   g_InputState.dwKeyPress |= kKeySearch;
+		   }
+		   mouseLkey = FALSE;
+		   lastPressMLButtonTime = 0;
+		   lastReleaseMLButtonTime = SDL_GetTicks();
+
+	   }
+	   else if (lpEvent->button.button == 2)
+	   {
+		   mouseMkey = FALSE;
+		   g_InputState.dwKeyPress |= kKeySearch;
+		   return;
+	   }
+	   else if (lpEvent->button.button == 3)
+	   {
+		   mouseRkey = FALSE;
+		   g_InputState.dwKeyPress |= kKeyMenu;
+		   return;
+	   }
+   }
+
+   for (int i = 0; i < MAX_BUTTOM; i++)
+   {
+	   if (gUI_Buttom[i].visable && gUI_Buttom[i].enable)
+	   {
+		   BOOL inRange = FALSE;
+		   if (lpEvent->button.x >= gUI_Buttom[i].range.x && lpEvent->button.y >= gUI_Buttom[i].range.y &&
+			   lpEvent->button.x <= gUI_Buttom[i].range.x + gUI_Buttom[i].range.w  &&
+			   lpEvent->button.y <= gUI_Buttom[i].range.y + gUI_Buttom[i].range.h)
+			   inRange = TRUE;
+
+		   if (lpEvent->type == SDL_MOUSEBUTTONDOWN && inRange)
+		   {
+			   gUI_Buttom[i].selected = TRUE;
+			   mouseLkey = FALSE;
+		   }
+		   if (lpEvent->type == SDL_MOUSEBUTTONUP)
+		   {
+			   gUI_Buttom[i].selected = FALSE;
+			   if (inRange)
+			   {
+
+				   if (i == buttomBACK || i == buttomMENU || i == buttomClose)
+				   {
+					   g_InputState.dwKeyPress |= kKeyMenu;
+					   return;
+				   }
+				   else if (i== buttomGP_SW)
+				   {
+					   gUI_GamePad.visable = !gUI_GamePad.visable;
+					   gUI_Buttom[buttomGP_A].visable = gUI_GamePad.visable;
+					   return;
+				   }
+				   else if (i == buttomGP_A)
+				   {
+					   g_InputState.dwKeyPress |= kKeySearch;
+					   return;
+				   }
+				   else
+					   gUI_Buttom[i].KeyClick = TRUE;
+			   }
+			   else
+			   {
+				   gUI_Buttom[i].selected = FALSE;
+			   }
+		   }
+		   if (inRange)
+			   return;
+	   }
+   }
+   if (CheckGamePad(lpEvent->button.x, lpEvent->button.y, lpEvent->type) == TRUE)
+	   return;
+   if (g_MenuCtrl.MenuItem != NULL)
+   {
+	   if (lpEvent->type == SDL_MOUSEBUTTONUP && lpEvent->button.button == 1)
+	   {
+		   g_InputState.dwKeyPress = 0;
+		   for (int i = 0; i < g_MenuCtrl.Count; i++)
+		   {
+			   if (g_MenuCtrl.MenuItem[i].fEnabled == TRUE)
+			   {
+				   int x = PAL_X(g_MenuCtrl.MenuItem[i].pos);
+				   int y = PAL_Y(g_MenuCtrl.MenuItem[i].pos);
+				   int w = PAL_X(g_MenuCtrl.MenuItem[i].size);
+				   int h = PAL_Y(g_MenuCtrl.MenuItem[i].size);
+				   if (gDraw240)
+				   {
+					   if (g_MenuCtrl.Click && mx >= x && mx < x + w
+						   && my240 >= y && my240 < y + h
+						   )
+					   {
+						   g_MenuCtrl.Click = 2;
+						   g_MenuCtrl.Select = i;
+						   break;
+					   }
+				   }
+				   else
+				   {
+					   if (g_MenuCtrl.Click && mx >= x && mx < x + w
+						   && my >= y && my < y + h
+						   )
+					   {
+						   g_MenuCtrl.Click = 2;
+						   g_MenuCtrl.Select = i;
+						   break;
+					   }
+				   }
+			   }
+		   }
+	   }
+	   else if (mouseLkey == TRUE && (lpEvent->type == SDL_MOUSEBUTTONDOWN || lpEvent->type == SDL_MOUSEMOTION)) //Button dwon or motion
+	   {
+		   for (int i = 0; i < g_MenuCtrl.Count; i++)
+		   {
+			   if (g_MenuCtrl.MenuItem[i].fEnabled)
+			   {
+				   int x = PAL_X(g_MenuCtrl.MenuItem[i].pos);
+				   int y = PAL_Y(g_MenuCtrl.MenuItem[i].pos);
+				   int w = PAL_X(g_MenuCtrl.MenuItem[i].size);
+				   int h = PAL_Y(g_MenuCtrl.MenuItem[i].size);
+				   if (gDraw240)
+				   {
+					   if (mx >= x && mx < x + w
+						   && my240 >= y && my240 < y + h
+						   )
+					   {
+						   if (lpEvent->type == SDL_MOUSEBUTTONDOWN && lpEvent->button.button == 1)
+							   g_MenuCtrl.Click = 1;
+						   g_MenuCtrl.Select = i;
+						   break;
+					   }
+				   }
+				   else
+				   {
+					   if (mx >= x && mx < x + w
+						   && my >= y && my < y + h
+						   )
+					   {
+						   if (lpEvent->type == SDL_MOUSEBUTTONDOWN && lpEvent->button.button == 1)
+							   g_MenuCtrl.Click = 1;
+						   g_MenuCtrl.Select = i;
+						   break;
+					   }
+				   }
+			   }
+		   }
+
+	   }
+
+	   return;
+   }
+   if (lpEvent->type == SDL_MOUSEWHEEL && gpGlobals->dwUI_Game & 0x200) //ListMenu & MOUSEWHEEL
+   {
+	   g_ListMenu.iVectorY += -(lpEvent->wheel.y * 18);
+	   return;
+   }
+   if ((gpGlobals->dwUI_Game & 1) != 0) //any key
+   {
+	   if (lpEvent->type == SDL_MOUSEBUTTONDOWN)
+		   g_InputState.dwKeyPress |= kKeyMenu;
+	   return;
+   }
+   else if (gpGlobals->dwUI_Game & 0x200) //ListMenu
+   {
+	   if (lpEvent->type == SDL_MOUSEMOTION && mouseLkey == FALSE)
+	   { }
+	   else if (lpEvent->type >= SDL_MOUSEMOTION && lpEvent->type < SDL_MOUSEWHEEL)
+		   ListMenu_MouseEvent((int)mx, (int)my, lpEvent->type);
+	   return;
+   }
+   else if (gpGlobals->dwUI_Game == 2) //player control
+   {
+      if (mouseLkey && gUI_GamePad.currentDirection == DPadNone)
+      {
+         if (omousex < 0 || omousex > 320)
+            mouseLkey = FALSE;
+      }
+	   return;
+   }
+
+   
+   gridWidth = g_dwScreenWidth / 3;
+   gridHeight = g_dwScreenHeight / 3;
+
+   thumbx = ceil(lpEvent->button.x / gridWidth);
+   thumby = floor(lpEvent->button.y / gridHeight);
    gridIndex = thumbx + thumby * 3 - 1;
    
    switch (lpEvent->type)
@@ -393,39 +622,23 @@ PAL_MouseEventFilter(
       switch (gridIndex)
       {
       case 2:
-         g_InputState.prevdir = g_InputState.dir;
-         g_InputState.dir = kDirNorth;
          break;
       case 6:
-         g_InputState.prevdir = g_InputState.dir;
-         g_InputState.dir = kDirSouth;
          break;
       case 0:
-         g_InputState.prevdir = g_InputState.dir;
-         g_InputState.dir = kDirWest;
          break;
       case 8:
-         g_InputState.prevdir = g_InputState.dir;
-         g_InputState.dir = kDirEast;
          break;
       case 1:
-        //g_InputState.prevdir = g_InputState.dir;
-        //g_InputState.dir = kDirNorth;
          g_InputState.dwKeyPress |= kKeyUp;
          break;
       case 7:
-        //g_InputState.prevdir = g_InputState.dir;
-        //g_InputState.dir = kDirSouth; 
          g_InputState.dwKeyPress |= kKeyDown;
          break;
       case 3:
-        //g_InputState.prevdir = g_InputState.dir;
-        //g_InputState.dir = kDirWest;
         g_InputState.dwKeyPress |= kKeyLeft;
          break;
       case 5:
-         //g_InputState.prevdir = g_InputState.dir;
-         //g_InputState.dir = kDirEast;
          g_InputState.dwKeyPress |= kKeyRight;
          break;
       }
@@ -518,6 +731,7 @@ PAL_MouseEventFilter(
       }
       break;
    }
+
 #endif
 }
 
@@ -983,6 +1197,20 @@ PAL_TouchEventFilter(
          }
       }
       break;
+   }
+#endif
+#if defined (__IOS__)
+   switch (lpEvent->type)
+   {
+      case SDL_FINGERDOWN:
+      {
+         int posx = gConfig.dwScreenWidth * lpEvent->tfinger.x;
+         int posy = gConfig.dwScreenHeight * lpEvent->tfinger.y;
+      }
+         break;
+      case SDL_FINGERUP:
+         TouchFlag = FALSE;
+         break;
    }
 #endif
 }

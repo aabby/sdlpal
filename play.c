@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -21,6 +21,8 @@
 //
 
 #include "main.h"
+
+extern BOOL mouseLkey, mouseRkey, mouseMkey;
 
 VOID
 PAL_GameUpdate(
@@ -266,12 +268,15 @@ PAL_GameUseItem(
 {
    WORD         wObject;
 
+   gpGlobals->dwUI_Game |= 8;
+
    while (TRUE)
    {
       wObject = PAL_ItemSelectMenu(NULL, kItemFlagUsable);
 
       if (wObject == 0)
       {
+		  gpGlobals->dwUI_Game &= (0xffffffff - 8);
          return;
       }
 
@@ -323,10 +328,11 @@ PAL_GameUseItem(
          {
             PAL_AddItemToInventory(wObject, -1);
          }
-
+		 gpGlobals->dwUI_Game &= (0xffffffff - 8);
          return;
       }
    }
+   gpGlobals->dwUI_Game &= (0xffffffff - 8);
 }
 
 VOID
@@ -349,7 +355,7 @@ PAL_GameEquipItem(
 --*/
 {
    WORD      wObject;
-
+   
    while (TRUE)
    {
       wObject = PAL_ItemSelectMenu(NULL, kItemFlagEquipable);
@@ -517,8 +523,9 @@ PAL_StartFrame(
    //
    // Update the positions and gestures of party members
    //
+   
+   gpGlobals->dwUI_Game |= 2;
    PAL_UpdateParty();
-
    //
    // Update the scene
    //
@@ -574,6 +581,7 @@ PAL_StartFrame(
       //
       PAL_QuitGame();
    }
+   
 
    if (--gpGlobals->wChasespeedChangeCycles == 0)
    {
@@ -612,5 +620,9 @@ PAL_WaitForKey(
       {
          break;
       }
+	  if (mouseLkey || mouseMkey || mouseRkey)
+	  {
+		  break;
+	  }
    }
 }

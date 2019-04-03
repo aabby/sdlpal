@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -25,17 +25,19 @@
 
 #include "common.h"
 
-#define VIDEO_CopySurface(s, sr, t, tr) SDL_BlitSurface((s), (sr), (t), (tr))
-#define VIDEO_CopyEntireSurface(s, t)   SDL_BlitSurface((s), NULL, (t), NULL)
-#define VIDEO_BackupScreen(s)           SDL_BlitSurface((s), NULL, gpScreenBak, NULL)
-#define VIDEO_RestoreScreen(t)          SDL_BlitSurface(gpScreenBak, NULL, (t), NULL)
 #define VIDEO_FreeSurface(s)            SDL_FreeSurface(s)
 
 PAL_C_LINKAGE_BEGIN
 
 extern SDL_Surface *gpScreen;
 extern SDL_Surface *gpScreenBak;
+
+extern SDL_Surface *gpScreen240;
+extern SDL_Surface *gpScreenBak240;
+extern SDL_Surface       *gpScreenReal240;
 extern volatile BOOL g_bRenderPaused;
+
+extern BOOL gDraw240;
 
 #if PAL_HAS_GLSL
 void Filter_StepParamSlot(int step);
@@ -148,6 +150,16 @@ VIDEO_SetupTouchArea(
     int draw_w,
     int draw_h
 );
+
+void VIDEO_Clean240();
+
+int VIDEO_BackupScreen(SDL_Surface * src);
+
+int VIDEO_RestoreScreen(SDL_Surface * dst);
+
+int VIDEO_CopySurface(SDL_Surface * src, SDL_Rect *sr, SDL_Surface *dst, SDL_Rect *tr);
+
+int VIDEO_CopyEntireSurface(SDL_Surface *src, SDL_Surface *dst);
 
 PAL_C_LINKAGE_END
 

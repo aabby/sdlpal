@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -26,16 +26,18 @@
 #ifndef PAL_CONFIG_H
 # define PAL_CONFIG_H
 
+# define PAL_HAS_GAMEPAD 1
+
 # define PAL_PREFIX            UTIL_BasePath()
 # define PAL_SAVE_PREFIX       UTIL_SavePath()
-# define PAL_HAS_TOUCH         1
+# define PAL_HAS_TOUCH         0
 # define PAL_DEFAULT_WINDOW_WIDTH   320
 # define PAL_DEFAULT_WINDOW_HEIGHT  200
 # define PAL_DEFAULT_TEXTURE_WIDTH   1280
 # define PAL_DEFAULT_TEXTURE_HEIGHT  800
 
 # if SDL_VERSION_ATLEAST(2,0,0)
-#  define PAL_VIDEO_INIT_FLAGS  (SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI)
+#  define PAL_VIDEO_INIT_FLAGS  (SDL_WINDOW_SHOWN)
 # else
 #  define PAL_VIDEO_INIT_FLAGS  (SDL_HWSURFACE | SDL_FULLSCREEN)
 # endif
@@ -50,7 +52,7 @@
 
 #define PAL_HAS_NATIVEMIDI  1
 
-#define PAL_HAS_CONFIG_PAGE 1
+#define PAL_HAS_CONFIG_PAGE 0
 
 #define PAL_HAS_PLATFORM_SPECIFIC_UTILS 1
 

@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7165505C195BB372006E1227"
-               BuildableName = "SDLPal.app"
-               BlueprintName = "SDLPal"
+               BuildableName = "PAL2019.app"
+               BlueprintName = "PAL2019"
                ReferencedContainer = "container:SDLPal.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,8 +33,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7165505C195BB372006E1227"
-            BuildableName = "SDLPal.app"
-            BlueprintName = "SDLPal"
+            BuildableName = "PAL2019.app"
+            BlueprintName = "PAL2019"
             ReferencedContainer = "container:SDLPal.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -56,8 +56,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7165505C195BB372006E1227"
-            BuildableName = "SDLPal.app"
-            BlueprintName = "SDLPal"
+            BuildableName = "PAL2019.app"
+            BlueprintName = "PAL2019"
             ReferencedContainer = "container:SDLPal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -75,8 +75,8 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7165505C195BB372006E1227"
-            BuildableName = "SDLPal.app"
-            BlueprintName = "SDLPal"
+            BuildableName = "PAL2019.app"
+            BlueprintName = "PAL2019"
             ReferencedContainer = "container:SDLPal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

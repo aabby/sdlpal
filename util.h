@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -361,6 +361,8 @@ void
 UTIL_LogSetPrelude(
     const char    *prelude
 );
+
+SDL_Surface * UTIL_LoadBMP(LPCSTR file);
 
 PAL_C_LINKAGE_END
 

@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -21,6 +21,8 @@
 //
 
 #include "main.h"
+
+static BOOL buttomstatus;
 
 static struct MAGICITEM
 {
@@ -61,60 +63,13 @@ PAL_MagicSelectionMenuUpdate(
    const int   iBoxYOffset = gConfig.ScreenLayout.ExtraMagicDescLines * 16;
    const int   iCursorXOffset = gConfig.dwWordLength * 5 / 2;
    const int   iPageLineOffset = iLinesPerPage / 2;
+   const int   iLinesMax = iLinesPerPage * 18;
 
-   //
-   // Check for inputs
-   //
-   if (g_InputState.dwKeyPress & kKeyUp)
+   if (g_InputState.dwKeyPress & kKeyMenu)
    {
-      item_delta = -iItemsPerLine;
+	   ListMenuClose();
+	   return 0;
    }
-   else if (g_InputState.dwKeyPress & kKeyDown)
-   {
-      item_delta = iItemsPerLine;
-   }
-   else if (g_InputState.dwKeyPress & kKeyLeft)
-   {
-      item_delta = -1;
-   }
-   else if (g_InputState.dwKeyPress & kKeyRight)
-   {
-      item_delta = 1;
-   }
-   else if (g_InputState.dwKeyPress & kKeyPgUp)
-   {
-      item_delta = -(iItemsPerLine * iLinesPerPage);
-   }
-   else if (g_InputState.dwKeyPress & kKeyPgDn)
-   {
-      item_delta = iItemsPerLine * iLinesPerPage;
-   }
-   else if (g_InputState.dwKeyPress & kKeyHome)
-   {
-      item_delta = -g_iCurrentItem;
-   }
-   else if (g_InputState.dwKeyPress & kKeyEnd)
-   {
-      item_delta = g_iNumMagic - g_iCurrentItem - 1;
-   }
-   else if (g_InputState.dwKeyPress & kKeyMenu)
-   {
-      return 0;
-   }
-   else
-   {
-      item_delta = 0;
-   }
-
-   //
-   // Make sure the current menu item index is in bound
-   //
-   if (g_iCurrentItem + item_delta < 0)
-      g_iCurrentItem = 0;
-   else if (g_iCurrentItem + item_delta >= g_iNumMagic)
-      g_iCurrentItem = g_iNumMagic-1;
-   else
-      g_iCurrentItem += item_delta;
 
    //
    // Create the box.
@@ -216,7 +171,7 @@ PAL_MagicSelectionMenuUpdate(
       PAL_DrawNumber(g_wPlayerMP, 4, PAL_XY(50, 14), kNumColorCyan, kNumAlignRight);
    }
 
-
+   ListMenuUpdate();
    //
    // Draw the texts of the current page
    //
@@ -226,71 +181,77 @@ PAL_MagicSelectionMenuUpdate(
       i = 0;
    }
 
-   for (j = 0; j < iLinesPerPage; j++)
+   for (i = 0; i < g_iNumMagic; i++)
    {
-      for (k = 0; k < iItemsPerLine; k++)
-      {
-         bColor = MENUITEM_COLOR;
 
-         if (i >= g_iNumMagic)
-         {
-            //
-            // End of the list reached
-            //
-            j = iLinesPerPage;
-            break;
-         }
+	   bColor = MENUITEM_COLOR;
 
-         if (i == g_iCurrentItem)
-         {
-            if (rgMagicItem[i].fEnabled)
-            {
-               bColor = MENUITEM_COLOR_SELECTED;
-            }
-            else
-            {
-               bColor = MENUITEM_COLOR_SELECTED_INACTIVE;
-            }
-         }
-         else if (!rgMagicItem[i].fEnabled)
-         {
-            bColor = MENUITEM_COLOR_INACTIVE;
-         }
+	   if (i >= g_iNumMagic)
+	   {
+		   //
+		   // End of the list reached
+		   //
+		   j = iLinesPerPage;
+		   break;
+	   }
+	   WORD x = i % iItemsPerLine;
+	   WORD ly = i / iItemsPerLine;
+	   int y = ((ly + 1) * 18) + iBoxYOffset + g_ListMenu.iShiftY;
+	   if (y < 0) continue;
+	   else if (y >= iLinesMax + 54 + 18 + iBoxYOffset+18) break;
+	   PAL_POS pos = PAL_XY(x * iItemTextWidth, y);
 
-         //
-         // Draw the text
-         //
-         PAL_DrawText(PAL_GetWord(rgMagicItem[i].wMagic), PAL_XY(35 + k * iItemTextWidth, 54 + j * 18 + iBoxYOffset), bColor, TRUE, FALSE, FALSE);
+	   if (i == g_iCurrentItem)
+	   {
+		   if (rgMagicItem[i].fEnabled)
+		   {
+			   bColor = MENUITEM_COLOR_SELECTED;
+		   }
+		   else
+		   {
+			   bColor = MENUITEM_COLOR_SELECTED_INACTIVE;
+		   }
+	   }
+	   else if (!rgMagicItem[i].fEnabled)
+	   {
+		   bColor = MENUITEM_COLOR_INACTIVE;
+	   }
 
-         //
-         // Draw the cursor on the current selected item
-         //
-         if (i == g_iCurrentItem)
-         {
-            PAL_RLEBlitToSurface(PAL_SpriteGetFrame(gpSpriteUI, SPRITENUM_CURSOR),
-               gpScreen, PAL_XY(35 + iCursorXOffset + k * iItemTextWidth, 64 + j * 18 + iBoxYOffset));
-         }
+	   //
+	   // Draw the text
+	   //
+	   PAL_DrawText(PAL_GetWord(rgMagicItem[i].wMagic), pos, bColor, TRUE, FALSE, FALSE);
 
-         i++;
-      }
+	   //
+	   // Draw the cursor on the current selected item
+	   //
+	   if (i == g_iCurrentItem)
+	   {
+		   PAL_RLEBlitToSurface(PAL_SpriteGetFrame(gpSpriteUI, SPRITENUM_CURSOR),
+			   gpScreen, PAL_XY(iCursorXOffset + x * iItemTextWidth, 10 + y));
+	   }
    }
 
-   if (g_InputState.dwKeyPress & kKeySearch)
+   g_ListMenu.fDoUpdate = FALSE;
+
+   if (g_InputState.dwKeyPress & kKeySearch || g_ListMenu.wClick == 1)
    {
-      if (rgMagicItem[g_iCurrentItem].fEnabled)
-      {
-         j = g_iCurrentItem % iItemsPerLine;
-		 k = (g_iCurrentItem < iItemsPerLine * iPageLineOffset) ? (g_iCurrentItem / iItemsPerLine) : iPageLineOffset;
+	   if (rgMagicItem[g_iCurrentItem].fEnabled)
+	   {
+		   j = g_iCurrentItem % iItemsPerLine;
+		   k = (g_iCurrentItem < iItemsPerLine * iPageLineOffset) ? (g_iCurrentItem / iItemsPerLine) : iPageLineOffset;
 
-		 j = 35 + j * iItemTextWidth;
-		 k = 54 + k * 18 + iBoxYOffset;
+		   j = 35 + j * iItemTextWidth;
+		   k = 54 + k * 18 + iBoxYOffset;
 
-         PAL_DrawText(PAL_GetWord(rgMagicItem[g_iCurrentItem].wMagic), PAL_XY(j, k), MENUITEM_COLOR_CONFIRMED, FALSE, TRUE, FALSE);
+		   PAL_DrawText(PAL_GetWord(rgMagicItem[g_iCurrentItem].wMagic), PAL_XY(j, k), MENUITEM_COLOR_CONFIRMED, FALSE, TRUE, FALSE);
 
-         return rgMagicItem[g_iCurrentItem].wMagic;
-      }
+		   ListMenuClose();
+		   return rgMagicItem[g_iCurrentItem].wMagic;
+	   }
    }
 
+   g_ListMenu.fDoUpdate = TRUE;
    return 0xFFFF;
 }
 
@@ -321,6 +282,9 @@ PAL_MagicSelectionMenuInit(
 {
    WORD       w;
    int        i, j;
+
+   buttomstatus = gUI_Buttom[buttomBACK].visable;
+   gUI_Buttom[buttomBACK].visable = TRUE;
 
    g_iCurrentItem = 0;
    g_iNumMagic = 0;
@@ -403,6 +367,11 @@ PAL_MagicSelectionMenuInit(
          break;
       }
    }
+
+   //
+   // ListMenu init
+   //
+   ListMenuOpen(&g_iCurrentItem, &g_iNumMagic, 35, 54 + gConfig.ScreenLayout.ExtraMagicDescLines * 16, 32 / gConfig.dwWordLength, 5 - gConfig.ScreenLayout.ExtraMagicDescLines, 8 * gConfig.dwWordLength + 7);
 }
 
 WORD
@@ -459,6 +428,8 @@ PAL_MagicSelectionMenu(
 
       if (w != 0xFFFF)
       {
+		  ListMenuClose();
+		  gUI_Buttom[buttomBACK].visable = buttomstatus;
          return w;
       }
 
@@ -475,6 +446,8 @@ PAL_MagicSelectionMenu(
 
       dwTime = SDL_GetTicks() + FRAME_TIME;
    }
-
+   
+   ListMenuClose();
+   gUI_Buttom[buttomBACK].visable = buttomstatus;
    return 0; // should not really reach here
 }
