@@ -1458,7 +1458,7 @@ None.
 
 
 	LPCWSTR rgszStrings[] = {
-		L"  PAL2019 (http://sdlpal.github.io/)",
+		L"  PAL2019 (https://github.com/aabby/sdlpal)",
 		L"  by SOFTSTAR (C) 1995-2019",
 		L"  include SDL, SDLPAL ",
 		L"  ",
