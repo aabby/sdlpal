@@ -56,87 +56,95 @@ PAL_CreateBoxInternal(
 
 INT
 PAL_InitUI(
-   VOID
+	VOID
 )
 /*++
   Purpose:
 
-    Initialze the UI subsystem.
+	Initialze the UI subsystem.
 
   Parameters:
 
-    None.
+	None.
 
   Return value:
 
-    0 = success, -1 = fail.
+	0 = success, -1 = fail.
 
 --*/
 {
-   int        iSize;
+	int        iSize;
 
-   //
-   // Load the UI sprite.
-   //
-   iSize = PAL_MKFGetChunkSize(CHUNKNUM_SPRITEUI, gpGlobals->f.fpDATA);
-   if (iSize < 0)
-   {
-      return -1;
-   }
+	//
+	// Load the UI sprite.
+	//
+	iSize = PAL_MKFGetChunkSize(CHUNKNUM_SPRITEUI, gpGlobals->f.fpDATA);
+	if (iSize < 0)
+	{
+		return -1;
+	}
 
-   gpSpriteUI = (LPSPRITE)calloc(1, iSize);
-   if (gpSpriteUI == NULL)
-   {
-      return -1;
-   }
+	gpSpriteUI = (LPSPRITE)calloc(1, iSize);
+	if (gpSpriteUI == NULL)
+	{
+		return -1;
+	}
 
-   PAL_MKFReadChunk(gpSpriteUI, iSize, CHUNKNUM_SPRITEUI, gpGlobals->f.fpDATA);
+	PAL_MKFReadChunk(gpSpriteUI, iSize, CHUNKNUM_SPRITEUI, gpGlobals->f.fpDATA);
 
-   extern SDL_Rect           gViewRect;
-   BOOL is4_3 = FALSE;
-   if ((float)gConfig.dwScreenHeight / (float)gConfig.dwScreenWidth == 0.75f)
-	   is4_3 = TRUE;
+	extern SDL_Rect           gViewRect;
 
-   memset(gUI_Buttom, 0, sizeof(UIBUTTOM)*MAX_BUTTOM);
-   AddButtom(buttomBACK, "back0.bmp", "back1.bmp", NULL);
-   SetButtom(buttomBACK, 324, -20, 30, 25);
-   AddButtom(buttomMENU, "menu.bmp", NULL, NULL);
-   SetButtom(buttomMENU, 324, -20, 30, 25);
-   if (is4_3)
-   {
-	   gUI_Buttom[buttomBACK].Alpha = 0xC0;
-	   gUI_Buttom[buttomMENU].Alpha = 0xA0;
-   }
+	BOOL is4_3 = FALSE;
+    float rate = (float)gConfig.dwScreenHeight / (float)gConfig.dwScreenWidth;
+	if (rate == 0.75f || (gConfig.fIsIOS && gConfig.fIsIPAD))
+		is4_3 = TRUE;
 
-   AddButtom(buttomAttack, "attack0.bmp", NULL, "attack2.bmp"); //³ò§ð
-   if (is4_3)
-   {
-	   SetButtom(buttomAttack, 5, 4, 30, 25);
-	   gUI_Buttom[buttomAttack].Alpha = 0xC0;
-   }
-   else
+	memset(gUI_Buttom, 0, sizeof(UIBUTTOM)*MAX_BUTTOM);
+	AddButtom(buttomBACK, "back0.bmp", "back1.bmp", NULL);
+	SetButtom(buttomBACK, 324, -20, 30, 25);
+	AddButtom(buttomMENU, "menu.bmp", NULL, NULL);
+	SetButtom(buttomMENU, 324, -20, 30, 25);
+	if (is4_3)
+	{
+		gUI_Buttom[buttomBACK].Alpha = 0xC0;
+		gUI_Buttom[buttomMENU].Alpha = 0xA0;
+	}
+
+	AddButtom(buttomAttack, "attack0.bmp", NULL, "attack2.bmp"); //³ò§ð
+	if (is4_3)
+	{
+		SetButtom(buttomAttack, 5, 4, 30, 25);
+		gUI_Buttom[buttomAttack].Alpha = 0xC0;
+	}
+	else
 		SetButtom(buttomAttack, -34, 4, 30, 25);
-   AddButtom(buttomMagic, "magic0.bmp", NULL, "magic2.bmp"); //±j§ð
-   if (is4_3)
-   {
-	   SetButtom(buttomMagic, 45, 4, 30, 25);
-	   gUI_Buttom[buttomMagic].Alpha = 0xC0;
-   }
-   else
-	   SetButtom(buttomMagic, -34, 4+(4+25), 30, 25);
-   AddButtom(buttomRepet, "repet0.bmp", NULL, "repet2.bmp"); //­«½Æ
-   if (is4_3)
-   {
-	   SetButtom(buttomRepet, 85, 4, 30, 25);
-	   gUI_Buttom[buttomRepet].Alpha = 0xC0;
-   }
-   else
-	   SetButtom(buttomRepet, -34, 4 + ((4 + 25)*2), 30, 25);
-   AddButtom(buttomClose, "close0.bmp", "close1.bmp", NULL);
-   SetButtom(buttomClose, 324, -20, 30, 25);
+	AddButtom(buttomMagic, "magic0.bmp", NULL, "magic2.bmp"); //±j§ð
+	if (is4_3)
+	{
+		SetButtom(buttomMagic, 45, 4, 30, 25);
+		gUI_Buttom[buttomMagic].Alpha = 0xC0;
+	}
+	else
+		SetButtom(buttomMagic, -34, 4 + (4 + 25), 30, 25);
+	AddButtom(buttomRepet, "repet0.bmp", NULL, "repet2.bmp"); //­«½Æ
+	if (is4_3)
+	{
+		SetButtom(buttomRepet, 85, 4, 30, 25);
+		gUI_Buttom[buttomRepet].Alpha = 0xC0;
+	}
+	else
+		SetButtom(buttomRepet, -34, 4 + ((4 + 25) * 2), 30, 25);
+	AddButtom(buttomClose, "close0.bmp", "close1.bmp", NULL);
+	SetButtom(buttomClose, 324, -20, 30, 25);
 
-   AddButtom(buttomLOGO, "LOGO.bmp", NULL, NULL); //copyright logo
-   SetButtom(buttomLOGO, 30, 170, 245, 23);
+	AddButtom(buttomLOGO, "LOGO.bmp", NULL, NULL); //copyright logo
+	SetButtom(buttomLOGO, 30, 170, 245, 23);
+
+	if (gpGlobals->wLanguage == 0)
+	{
+		AddButtom(buttomLOGO2, "gamerating.org.tw.15.bmp", NULL, NULL);
+		SetButtom(buttomLOGO2, 289, 172, 26, 21);
+    }
 #ifdef PAL_HAS_GAMEPAD
    AddGamePad();
 #endif
@@ -1398,7 +1406,8 @@ void ListMenu_MouseEvent(int mx, int my, Uint32 status)
 		{
 			if (*g_ListMenu.iSelect != select)
 			{
-				*g_ListMenu.iSelect = select;
+				if (select < *g_ListMenu.iCount)
+					*g_ListMenu.iSelect = select;
 			}
 			else
 			{

@@ -124,6 +124,7 @@ reset:
    while (TRUE)
    {
 	   gUI_Buttom[buttomLOGO].visable = TRUE;
+	   gUI_Buttom[buttomLOGO2].visable = TRUE;
 	   if (gpScreen240) gDraw240 = TRUE;
       //
       // Activate the menu
@@ -143,6 +144,7 @@ reset:
       else
       {
 		  gUI_Buttom[buttomLOGO].visable = FALSE;
+		  gUI_Buttom[buttomLOGO2].visable = FALSE;
          //
          // Load game
          //
@@ -161,6 +163,7 @@ reset:
       }
    }
    gUI_Buttom[buttomLOGO].visable = FALSE;
+   gUI_Buttom[buttomLOGO2].visable = FALSE;
    //
    // Fade out the screen and the music
    //

@@ -270,7 +270,8 @@ void SetGamePadTexture()
 void AddGamePad()
 {
 	BOOL is4_3 = FALSE;
-	if ((float)gConfig.dwScreenHeight / (float)gConfig.dwScreenWidth == 0.75f)
+    float rate = (float)gConfig.dwScreenHeight / (float)gConfig.dwScreenWidth;
+    if (rate == 0.75f || (gConfig.fIsIOS && gConfig.fIsIPAD))
 		is4_3 = TRUE;
 	AddButtom(buttomGP_SW, "dpad_sw.bmp", "dpad_sw_click.bmp", NULL);
 	if (is4_3)

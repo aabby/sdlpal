@@ -19,6 +19,7 @@ typedef enum tagUIBUTTOM_ITEM
 	buttomGP_SW,
 	buttomGP_A,
 	buttomLOGO,
+	buttomLOGO2,
 }UIBUTTOM_ITEM;
 
 typedef struct tagUIBUTTOM

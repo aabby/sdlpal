@@ -300,7 +300,9 @@ VIDEO_Startup(
 	   }
    }
 #if defined (__IOS__)
-   if ((float)g_dwScreenHeight / (float)g_dwScreenWidth != 0.75f)
+
+    float rate = (float)gConfig.dwScreenHeight / (float)gConfig.dwScreenWidth;
+    if (rate != 0.75f)
    {
 	   SDL_Surface *tmp = UTIL_LoadBMP("wallpaper.bmp");
 	   wallpaper = SDL_ConvertSurface(tmp, gpScreenReal->format, 0);
