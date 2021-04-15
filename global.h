@@ -557,10 +557,9 @@ typedef struct tagGLOBALVARS
    // 0x100 script
    // 0x200 Scroll menu
    DWORD            dwUI_Game;
-
-   // 0 cht
-   // 1 chs
-   WORD             wLanguage;
+   WORD				wLanguage;
+   WORD				wGameLanguage;
+   BOOL             fMOUSE;
 } GLOBALVARS, *LPGLOBALVARS;
 
 PAL_C_LINKAGE_BEGIN

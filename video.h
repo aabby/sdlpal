@@ -32,12 +32,7 @@ PAL_C_LINKAGE_BEGIN
 extern SDL_Surface *gpScreen;
 extern SDL_Surface *gpScreenBak;
 
-extern SDL_Surface *gpScreen240;
-extern SDL_Surface *gpScreenBak240;
-extern SDL_Surface       *gpScreenReal240;
 extern volatile BOOL g_bRenderPaused;
-
-extern BOOL gDraw240;
 
 #if PAL_HAS_GLSL
 void Filter_StepParamSlot(int step);
@@ -150,8 +145,6 @@ VIDEO_SetupTouchArea(
     int draw_w,
     int draw_h
 );
-
-void VIDEO_Clean240();
 
 int VIDEO_BackupScreen(SDL_Surface * src);
 

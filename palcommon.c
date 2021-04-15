@@ -72,13 +72,7 @@ PAL_RLEBlitToSurfaceWithShadow(
 
 --*/
 {
-	BOOL draw240 = FALSE;
-	if (gDraw240 && lpDstSurface == gpScreen)
-	{
-		lpDstSurface = gpScreen240;
-		draw240 = TRUE;
-	}
-	else if (g_ListMenu.fDoUpdate && lpDstSurface == gpScreen)
+	if (g_ListMenu.fDoUpdate && lpDstSurface == gpScreen)
 	{
 		lpDstSurface = g_ListMenu.ListScreen;
 	}
@@ -170,12 +164,7 @@ PAL_RLEBlitToSurfaceWithShadow(
             // Put the pixel onto the surface (FIXME: inefficient).
             //
 			if (bShadow)
-			{
-				if (draw240)
-					((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = 0xF0;
-				else
-					((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = PAL_CalcShadowColor(((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x]);
-			}
+				((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = PAL_CalcShadowColor(((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x]);
             else
                ((LPBYTE)lpDstSurface->pixels)[y * lpDstSurface->pitch + x] = lpBitmapRLE[j];
          }

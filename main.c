@@ -37,6 +37,11 @@ static int g_exit_code = 0;
 #define SPRITENUM_SPLASH_CRANE      0x49
 #define NUM_RIX_TITLE               0x05
 
+#ifdef _WINDOWS
+	#ifdef PAL_STEAM
+		#include "SteamTools.h"
+	#endif
+#endif
 
 static VOID
 PAL_Init(
@@ -492,6 +497,14 @@ main(
 	   TerminateOnError("Could not initialize SDL: %s.\n", SDL_GetError());
    }
 
+#ifdef PAL_STEAM
+
+   if (steam_init() != 0)
+   {
+	   TerminateOnError("Could not init steam.\n");
+   }
+#endif
+
    PAL_LoadConfig(TRUE);
 
    //
@@ -499,6 +512,10 @@ main(
    //
    if (UTIL_Platform_Init(argc, argv) != 0)
 	   return -1;
+
+#ifdef PAL_STEAM
+   steam_ugc();
+#endif
 
    //
    // Should launch setting?
@@ -523,6 +540,10 @@ main(
    PAL_Init();
 #endif
 
+#ifdef _WINDOWS
+
+#endif
+
 #if !defined(UNIT_TEST)
    //
    // Show the trademark screen and splash screen
@@ -545,3 +566,5 @@ main(
    return testmain(argc, argv);
 #endif
 }
+
+

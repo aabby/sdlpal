@@ -24,11 +24,9 @@
 
 // Screen buffer
 SDL_Surface              *gpScreen           = NULL;
-SDL_Surface              *gpScreen240        = NULL;
 
 // Backup screen buffer
 SDL_Surface              *gpScreenBak        = NULL;
-SDL_Surface              *gpScreenBak240     = NULL;
 
 // The global palette
 static SDL_Palette       *gpPalette          = NULL;
@@ -37,21 +35,17 @@ static SDL_Palette       *gpPalette          = NULL;
 SDL_Window               *gpWindow           = NULL;
 SDL_Renderer      *gpRenderer         = NULL;
 SDL_Texture       *gpTexture          = NULL;
-SDL_Texture       *gpTexture240       = NULL;
 SDL_Texture       *gpTouchOverlay     = NULL;
 SDL_Rect           gOverlayRect;
 SDL_Rect           gTextureRect;
 SDL_Rect           gViewRect;
-BOOL gDraw240 = FALSE;
 
 DWORD g_dwScreenWidth = 0;
 DWORD g_dwScreenHeight = 0;
 float gpScreenW_Magnification = 0.0f;
 float gpScreenH_Magnification = 0.0f;
-float gpScreenH_Magnification240 = 0.0f;
 float gpScreenW_MagnificationOriginal = 0.0f;
 float gpScreenH_MagnificationOriginal = 0.0f;
-float gpScreenH_MagnificationOriginal240 = 0.0f;
 
 #if defined (__IOS__)
 SDL_Surface *wallpaper = NULL;
@@ -70,7 +64,6 @@ static struct RenderBackend {
 
 // The real screen surface
 SDL_Surface       *gpScreenReal       = NULL;
-SDL_Surface       *gpScreenReal240    = NULL;
 
 volatile BOOL g_bRenderPaused = FALSE;
 
@@ -127,11 +120,18 @@ static SDL_Texture *VIDEO_CreateTexture(int width, int height)
 
     }
 
-    gViewRect.x = (width - gViewRect.w) / 2;
-    gViewRect.y = (height - gViewRect.h) / 2;
-    if (gViewRect.x < 0) gViewRect.x = 0;
-    if (gViewRect.y < 0) gViewRect.y = 0;
-
+	if ((float)height / (float)width != 0.75f) //not 4:3
+	{
+		gViewRect.x = (width - gViewRect.w) / 2;
+		gViewRect.y = (height - gViewRect.h) / 2;
+		if (gViewRect.x < 0) gViewRect.x = 0;
+		if (gViewRect.y < 0) gViewRect.y = 0;
+	}
+	else
+	{
+		gViewRect.x = 0;
+		gViewRect.y = 0;
+	}
     
 	int texture_width, texture_height;
 
@@ -234,27 +234,12 @@ VIDEO_Startup(
    gpScreenReal = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 200, 32,
                                        0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
 
-#ifdef PAL_MODE240
-   gConfig.fMode240 = TRUE;
-#else
-   gConfig.fMode240 = FALSE;
-#endif
-
    //
    // init LISTMENU
    //
    g_ListMenu.ListScreen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 8, 0, 0, 0, 0);
-   VIDEO_Clean240();
    g_ListMenu.fDoUpdate = FALSE;
 
-   if (gConfig.fMode240 == TRUE)
-   {
-	   gpScreen240 = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 8, 0, 0, 0, 0);
-	   gpScreenBak240 = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 8, 0, 0, 0, 0);
-	   gpScreenReal240 = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 240, 32,
-		   0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-	   VIDEO_Clean240();
-   }
    //
    // Create texture for screen.
    //
@@ -262,21 +247,14 @@ VIDEO_Startup(
    if(!gConfig.fEnableGLSL)
       SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, gConfig.pszScaleQuality);
    gpTexture = gRenderBackend.CreateTexture(render_w, render_h);
-   if (gConfig.fMode240 == TRUE)
-   {
-	   gpTexture240 = SDL_CreateTexture(gpRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 320, 240);
-	   SDL_SetTextureBlendMode(gpTexture240, SDL_BLENDMODE_BLEND);
-   }
    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
     g_dwScreenWidth = render_w;
     g_dwScreenHeight = render_h;
     gpScreenW_Magnification = (float)gViewRect.w / 320.0f;
     gpScreenH_Magnification = (float)gViewRect.h / 200.0f;
-	gpScreenH_Magnification240 = (float)gViewRect.h / 240.0f;
     gpScreenW_MagnificationOriginal = 320.0f / (float)gViewRect.w;
     gpScreenH_MagnificationOriginal = 200.0f / (float)gViewRect.h;
-	gpScreenH_MagnificationOriginal240 = 240.0f / (float)gViewRect.h;
     
    //
    // Create palette object
@@ -290,14 +268,6 @@ VIDEO_Startup(
    {
       VIDEO_Shutdown();
       return -2;
-   }
-   if (gConfig.fMode240 == TRUE)
-   {
-	   if (gpScreen240 == NULL || gpScreenBak240 == NULL || gpScreenReal240 == NULL || gpTexture240 == NULL)
-	   {
-		   VIDEO_Shutdown();
-		   return -2;
-	   }
    }
 #if defined (__IOS__)
 
@@ -413,7 +383,6 @@ VIDEO_Startup(
    }
 
 #endif
-
    return 0;
 }
 
@@ -436,6 +405,7 @@ VIDEO_Shutdown(
 
 --*/
 {
+
 #if PAL_HAS_GLSL
     // since gConfig is cleared already we'd to detect on side effects
 	if( gRenderBackend.Init == VIDEO_GLSL_Init ) {
@@ -457,18 +427,6 @@ VIDEO_Shutdown(
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 
-   if (gpScreen240 != NULL)
-   {
-	   SDL_FreeSurface(gpScreen240);
-   }
-   gpScreen240 = NULL;
-
-   if (gpScreenBak240 != NULL)
-   {
-	   SDL_FreeSurface(gpScreenBak240);
-   }
-   gpScreenBak240 = NULL;
-
    if (gpTouchOverlay)
    {
       SDL_DestroyTexture(gpTouchOverlay);
@@ -480,12 +438,6 @@ VIDEO_Shutdown(
 	  SDL_DestroyTexture(gpTexture);
    }
    gpTexture = NULL;
-
-   if (gpTexture240)
-   {
-	   SDL_DestroyTexture(gpTexture240);
-   }
-   gpTexture240 = NULL;
 
    if (gpRenderer)
    {
@@ -527,12 +479,6 @@ VIDEO_Shutdown(
       SDL_FreeSurface(gpScreenReal);
    }
    gpScreenReal = NULL;
-
-   if (gpScreenReal240 != NULL)
-   {
-	   SDL_FreeSurface(gpScreenReal240);
-   }
-   gpScreenReal240 = NULL;
 }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -552,17 +498,6 @@ VIDEO_RenderCopy(
     
 	SDL_UnlockTexture(gpTexture);
 
-	if (gpTexture240)
-	{
-		SDL_LockTexture(gpTexture240, NULL, &texture_pixels, &texture_pitch);
-
-		pixels = (uint8_t *)texture_pixels;
-		src = (uint8_t *)gpScreenReal240->pixels;
-		memcpy(pixels, src, (320 << 2) * 240);
-
-		SDL_UnlockTexture(gpTexture240);
-	}
-
 	SDL_RenderClear(gpRenderer);
 #if defined (__IOS__)
     if (wallpaper_texture)
@@ -573,12 +508,6 @@ VIDEO_RenderCopy(
 #endif
     SDL_Rect srcrng = {0,0,320,200};
 	SDL_RenderCopy(gpRenderer, gpTexture, &srcrng, &gViewRect);
-
-	if (gpTexture240)
-	{
-		srcrng.h = 240;
-		SDL_RenderCopy(gpRenderer, gpTexture240, &srcrng, &gViewRect);
-	}
 
 	CheckRender();
 	for (int i = 0; i < MAX_BUTTOM; i++)
@@ -657,18 +586,6 @@ VIDEO_UpdateScreen(
       dstrect.y = (SHORT)((INT)(screenRealY + lpRect->y) * screenRealHeight / gpScreen->h);
       dstrect.w = (WORD)((DWORD)(lpRect->w) * gpScreenReal->w / gpScreen->w);
       dstrect.h = (WORD)((DWORD)(lpRect->h) * screenRealHeight / gpScreen->h);
-
-	  if (gDraw240 && gpScreen240)
-	  {
-		  //memset(gpScreenReal240->pixels, 0, 320 * 240 * 4);
-		  if (dstrect.x == 0 && dstrect.y == 0 && dstrect.w == 320 && dstrect.h == 200)
-		  {
-			  SDL_SoftStretch(gpScreen240, NULL, gpScreenReal240, NULL);
-		  }
-		  else
-			SDL_SoftStretch(gpScreen240, (SDL_Rect *)lpRect, gpScreenReal240, &dstrect);
-		  gDraw240 = FALSE;
-	  }
 		 
 	  SDL_SoftStretch(gpScreen, (SDL_Rect *)lpRect, gpScreenReal, &dstrect);
 
@@ -780,23 +697,12 @@ VIDEO_SetPalette(
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
    SDL_Rect rect;
-   if (gpScreen240)
-   {
-	   for (int i=0;i<255;i++)
-		   rgPalette[i].a = 255;
-	   rgPalette[1].a = 0;
-	   rgPalette[0xF0].a = 0xC0;
-   }
    
    SDL_SetPaletteColors(gpPalette, rgPalette, 0, 256);
 
    SDL_SetSurfacePalette(gpScreen, gpPalette);
    SDL_SetSurfacePalette(gpScreenBak, gpPalette);
-   if (gpScreen240)
-   {
-	   SDL_SetSurfacePalette(gpScreen240, gpPalette);
-	   SDL_SetSurfacePalette(gpScreenBak240, gpPalette);
-   }
+
    if (g_ListMenu.ListScreen)
    {
 	   SDL_SetSurfacePalette(g_ListMenu.ListScreen, gpPalette);
@@ -810,13 +716,7 @@ VIDEO_SetPalette(
    SDL_SetSurfaceColorMod(gpScreen, 0xFF, 0xFF, 0xFF);
    SDL_SetSurfaceColorMod(gpScreenBak, 0, 0, 0);
    SDL_SetSurfaceColorMod(gpScreenBak, 0xFF, 0xFF, 0xFF);
-   if (gpScreen240)
-   {
-	   SDL_SetSurfaceColorMod(gpScreen240, 0, 0, 0);
-	   SDL_SetSurfaceColorMod(gpScreen240, 0xFF, 0xFF, 0xFF);
-	   SDL_SetSurfaceColorMod(gpScreenBak240, 0, 0, 0);
-	   SDL_SetSurfaceColorMod(gpScreenBak240, 0xFF, 0xFF, 0xFF);
-   }
+
    if (g_ListMenu.ListScreen)
    {
 	   SDL_SetSurfaceColorMod(g_ListMenu.ListScreen, 0, 0, 0);
@@ -827,10 +727,8 @@ VIDEO_SetPalette(
    rect.w = 320;
    rect.h = 200;
 
-   BOOL Draw240 = gDraw240;
-   if (gpScreen240) gDraw240 = TRUE;
    VIDEO_UpdateScreen(&rect);
-   gDraw240 = Draw240;
+
 #else
    SDL_SetPalette(gpScreen, SDL_LOGPAL | SDL_PHYSPAL, rgPalette, 0, 256);
    SDL_SetPalette(gpScreenBak, SDL_LOGPAL | SDL_PHYSPAL, rgPalette, 0, 256);
@@ -877,6 +775,7 @@ VIDEO_Resize(
    SDL_GetRendererOutputSize(gpRenderer, &render_w, &render_h);
    w = render_w;
    h = render_h;
+
    if (gpTexture)
    {
       SDL_DestroyTexture(gpTexture);
@@ -898,10 +797,8 @@ VIDEO_Resize(
    g_dwScreenHeight = h;
    gpScreenW_Magnification = (float)gViewRect.w / 320.0f;
    gpScreenH_Magnification = (float)gViewRect.h / 200.0f;
-   gpScreenH_Magnification240 = (float)gViewRect.h / 240.0f;
    gpScreenW_MagnificationOriginal = 320.0f / (float)gViewRect.w;
    gpScreenH_MagnificationOriginal = 200.0f / (float)gViewRect.h;
-   gpScreenH_MagnificationOriginal240 = 240.0f / (float)gViewRect.h;
 
    VIDEO_UpdateScreen(&rect);
 #else
@@ -1255,13 +1152,6 @@ VIDEO_SwitchScreen(
       {
          ((LPBYTE)(gpScreenBak->pixels))[j] = ((LPBYTE)(gpScreen->pixels))[j];
       }
-	  if (gpScreen240)
-	  {
-		  for (j = rgIndex[i]; j < gpScreen240->pitch * gpScreen240->h; j += 6)
-		  {
-			  ((LPBYTE)(gpScreenBak240->pixels))[j] = ((LPBYTE)(gpScreen240->pixels))[j];
-		  }
-	  }
       //
       // Draw the backup buffer to the screen
       //
@@ -1278,16 +1168,6 @@ VIDEO_SwitchScreen(
 
       SDL_SoftStretch(gpScreenBak, NULL, gpScreenReal, &dstrect);
 
-	  if (gpScreen240)
-	  {
-		  if (SDL_MUSTLOCK(gpScreenReal240))
-		  {
-			  if (SDL_LockSurface(gpScreenReal240) < 0)
-				  return;
-		  }
-
-		  SDL_SoftStretch(gpScreenBak240, NULL, gpScreenReal240, NULL);
-	  }
 #if SDL_VERSION_ATLEAST(2, 0, 0)
       gRenderBackend.RenderCopy();
 #else
@@ -1297,13 +1177,6 @@ VIDEO_SwitchScreen(
 	  if (SDL_MUSTLOCK(gpScreenReal))
 	  {
 		  SDL_UnlockSurface(gpScreenReal);
-	  }
-	  if (gpScreen240)
-	  {
-		  if (SDL_MUSTLOCK(gpScreenReal240))
-		  {
-			  SDL_UnlockSurface(gpScreenReal240);
-		  }
 	  }
       UTIL_Delay(wSpeed);
    }
@@ -1345,11 +1218,6 @@ VIDEO_FadeScreen(
    {
       if (SDL_LockSurface(gpScreenReal) < 0)
          return;
-   }
-   if (gpScreenReal240 && SDL_MUSTLOCK(gpScreenReal240))
-   {
-	   if (SDL_LockSurface(gpScreenReal240) < 0)
-		   return;
    }
 
    if (!bScaleScreen)
@@ -1398,28 +1266,6 @@ VIDEO_FadeScreen(
 
             ((LPBYTE)(gpScreenBak->pixels))[k] = ((a & 0xF0) | (b & 0x0F));
          }
-		 if (gpScreen240)
-		 {
-			 for (k = rgIndex[j]; k < gpScreen240->pitch * gpScreen240->h; k += 6)
-			 {
-				 a = ((LPBYTE)(gpScreen240->pixels))[k];
-				 b = ((LPBYTE)(gpScreenBak240->pixels))[k];
-
-				 if (i > 0)
-				 {
-					 if ((a & 0x0F) > (b & 0x0F))
-					 {
-						 b++;
-					 }
-					 else if ((a & 0x0F) < (b & 0x0F))
-					 {
-						 b--;
-					 }
-				 }
-
-				 ((LPBYTE)(gpScreenBak240->pixels))[k] = ((a & 0xF0) | (b & 0x0F));
-			 }
-		 }
          //
          // Draw the backup buffer to the screen
          //
@@ -1478,12 +1324,7 @@ VIDEO_FadeScreen(
             dstrect.h = screenRealHeight;
 
             SDL_SoftStretch(gpScreenBak, NULL, gpScreenReal, &dstrect);
-			if (gpScreenReal240)
-			{
-				dstrect.x = 0; dstrect.y = 0;
-				dstrect.w = 320; dstrect.h = 240;
-				SDL_SoftStretch(gpScreenBak240, NULL, gpScreenReal240, &dstrect);
-			}
+
 #if SDL_VERSION_ATLEAST(2, 0, 0)
             gRenderBackend.RenderCopy();
 #else
@@ -1496,11 +1337,6 @@ VIDEO_FadeScreen(
    if (SDL_MUSTLOCK(gpScreenReal))
    {
       SDL_UnlockSurface(gpScreenReal);
-   }
-
-   if (gpScreenReal240 && SDL_MUSTLOCK(gpScreenReal))
-   {
-	   SDL_UnlockSurface(gpScreenReal240);
    }
 
    //
@@ -1696,36 +1532,13 @@ VIDEO_DrawSurfaceToScreen(
 #endif
 }
 
-void VIDEO_Clean240()
-{
-	memset(g_ListMenu.ListScreen->pixels, 1, 320 * 240);
-	if (gpScreen240 != NULL)
-	{
-		memset(gpScreen240->pixels, 1, 320 * 240);
-		memset(gpScreenBak240->pixels, 1, 320 * 240);
-		memset(gpScreenReal240->pixels, 0, 320 * 240 * 4);
-	}
-}
-
 int VIDEO_BackupScreen(SDL_Surface * src)
 {
-	if (gDraw240 && src == gpScreen)
-	{
-		memcpy(gpScreenBak240->pixels, gpScreen240->pixels, 320 * 240);
-	}
-
 	return SDL_BlitSurface(src, NULL, gpScreenBak, NULL);
 }
 
 int VIDEO_RestoreScreen(SDL_Surface * dst)
 {
-	if (gDraw240 && dst == gpScreen)
-	{
-		memset(gpScreenReal240->pixels, 0, 320 * 240 * 4);
-		memcpy(gpScreen240->pixels, gpScreenBak240->pixels, 320 * 240);
-		SDL_SoftStretch(gpScreen240, NULL, gpScreenReal240, NULL);
-	}
-
 	return SDL_BlitSurface(gpScreenBak, NULL, dst, NULL);
 }
 
@@ -1738,3 +1551,4 @@ int VIDEO_CopyEntireSurface(SDL_Surface *src, SDL_Surface *dst)
 {
 	return SDL_BlitSurface(src, NULL, dst, NULL);
 }
+

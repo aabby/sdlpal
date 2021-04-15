@@ -32,6 +32,12 @@
 #include "SDL_messagebox.h"
 #endif
 
+#ifdef PAL_STEAM
+#include "win32\SteamTools.h"
+extern bool steam_FindModFile(const char * filename);
+extern char MOD_PATH[1024];
+#endif
+
 static char internal_buffer[PAL_MAX_GLOBAL_BUFFERS + 1][PAL_GLOBAL_BUFFER_SIZE];
 #define INTERNAL_BUFFER_SIZE_ARGS internal_buffer[PAL_MAX_GLOBAL_BUFFERS], PAL_GLOBAL_BUFFER_SIZE
 
@@ -287,7 +293,8 @@ UTIL_Delay(
 )
 {
    unsigned int t = SDL_GetTicks() + ms;
-   Setup_MenuCtrl(NULL, 0, 0);
+   if (gpGlobals->fMOUSE == TRUE)
+		Setup_MenuCtrl(NULL, 0, 0);
    PAL_ProcessEvent();
 
    while (!SDL_TICKS_PASSED(SDL_GetTicks(), t))
@@ -476,22 +483,22 @@ UTIL_OpenFile(
 
 FILE *
 UTIL_OpenFileForMode(
-   LPCSTR            lpszFileName,
-   LPCSTR            szMode
+	LPCSTR            lpszFileName,
+	LPCSTR            szMode
 )
 /*++
   Purpose:
 
-    Open a file. If fails, return NULL.
+	Open a file. If fails, return NULL.
 
   Parameters:
 
-    [IN]  lpszFileName - file name to open.
-    [IN]  szMode - file open mode.
+	[IN]  lpszFileName - file name to open.
+	[IN]  szMode - file open mode.
 
   Return value:
 
-    Pointer to the file.
+	Pointer to the file.
 
 --*/
 {
@@ -511,8 +518,15 @@ UTIL_OpenFileForMode(
 		free(temp);
 		return fp;
 	}
-
+#ifdef PAL_STEAM
+	if (steam_FindModFile(lpszFileName))
+	{
+		return UTIL_OpenFileAtPathForMode(MOD_PATH, lpszFileName, szMode);
+	}
+	else
+#endif
 	return UTIL_OpenFileAtPathForMode(gConfig.pszGamePath, lpszFileName, szMode);
+
 }
 
 FILE *
@@ -745,7 +759,7 @@ UTIL_CheckResourceFiles(
 			retval |= (PALFILE)(1 << i);
 		}
 	}
-
+	/*
 	for (int i = 0; i < sizeof(msg_files[0]) / sizeof(msg_files[0][0]); i++)
 	{
 		if (!UTIL_GetFullPathName(INTERNAL_BUFFER_SIZE_ARGS, path, msg_files[i][msgidx]))
@@ -753,7 +767,7 @@ UTIL_CheckResourceFiles(
 			retval |= (PALFILE)(1 << ((i + 1) * msgidx + 13));
 		}
 	}
-
+	*/
 	for (int i = 0; i < sizeof(sound_files) / sizeof(sound_files[0]); i++)
 	{
 		if (!UTIL_GetFullPathName(INTERNAL_BUFFER_SIZE_ARGS, path, sound_files[i]))

@@ -195,14 +195,27 @@ PAL_InitGlobals(
    //
    // Detect game language only when no message file specified
    //
-   if (!gConfig.pszMsgFile) PAL_SetCodePage(PAL_DetectCodePage("word.dat"));
+   if (!gConfig.pszMsgFile)
+   {
+	   if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
+		   PAL_SetCodePage(CP_GBK);
+	   else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
+		   PAL_SetCodePage(CP_BIG5);
+	   else
+		   PAL_SetCodePage(PAL_DetectCodePage("word.dat"));
+   }
 
    //
    // Set decompress function
    //
    Decompress = gConfig.fIsWIN95 ? YJ2_Decompress : YJ1_Decompress;
 
-   gpGlobals->lpObjectDesc = gConfig.fIsWIN95 ? NULL : PAL_LoadObjectDesc("desc.dat");
+   if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
+	   gpGlobals->lpObjectDesc = gConfig.fIsWIN95 ? NULL : PAL_LoadObjectDesc("desc_chs.dat");
+   else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
+       gpGlobals->lpObjectDesc = gConfig.fIsWIN95 ? NULL : PAL_LoadObjectDesc("desc_cht.dat");
+   else
+	   gpGlobals->lpObjectDesc = gConfig.fIsWIN95 ? NULL : PAL_LoadObjectDesc("desc.dat");
    gpGlobals->bCurrentSaveSlot = 1;
 
    return 0;
@@ -568,7 +581,11 @@ PAL_LoadGame_Common(
 	//
 	// Try to open the specified file
 	//
+#ifdef PAL_STEAM
+	FILE *fp = UTIL_OpenFileAtPath("SAVE", PAL_va(1, "%d.rpg", iSaveSlot));
+#else
 	FILE *fp = UTIL_OpenFileAtPath(gConfig.pszSavePath, PAL_va(1, "%d.rpg", iSaveSlot));
+#endif
 	//
 	// Read all data from the file and close.
 	//
@@ -788,11 +805,17 @@ PAL_SaveGame_Common(
 	//
 	// Try writing to file
 	//
+#ifdef PAL_STEAM
+	if ((fp = UTIL_OpenFileAtPathForMode("SAVE", PAL_va(1, "%d.rpg", iSaveSlot), "wb")) == NULL)
+	{
+		return;
+	}
+#else
 	if ((fp = UTIL_OpenFileAtPathForMode(gConfig.pszSavePath, PAL_va(1, "%d.rpg", iSaveSlot), "wb")) == NULL)
 	{
 		return;
 	}
-
+#endif
 	i = PAL_MKFGetChunkSize(0, gpGlobals->f.fpSSS);
 	i += size - sizeof(EVENTOBJECT) * MAX_EVENT_OBJECTS;
 

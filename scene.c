@@ -782,7 +782,7 @@ PAL_UpdateParty(
    //
    BOOL isPlayerControl = FALSE;
 
-   if (gpGlobals->dwUI_Game == 2) //player control
+   if (gpGlobals->fMOUSE == TRUE && gpGlobals->dwUI_Game == 2) //player control
    {
 	   GamePadMode(TRUE);
 	   INT xdiff = mouseKeyPosX - mousex;

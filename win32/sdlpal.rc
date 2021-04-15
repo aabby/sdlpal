@@ -13,215 +13,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// 非特定语言 resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
-LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-#pragma code_page(936)
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_LAUNCHER DIALOGEX 0, 0, 405, 300
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-EXSTYLE WS_EX_APPWINDOW
-CAPTION "SDL PAL Launcher"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    DEFPUSHBUTTON   "&Launch game",IDOK,177,279,50,14
-    PUSHBUTTON      "E&xit",IDCANCEL,7,279,50,14
-    LTEXT           "Game resource path:",IDC_STATIC,14,10,68,8
-    EDITTEXT        IDC_GAMEPATH,84,7,256,14,ES_AUTOHSCROLL | ES_READONLY
-    LTEXT           "CD source:",IDC_STATIC,18,209,36,8
-    GROUPBOX        "Font && Language",IDC_STATIC,7,25,391,50
-    GROUPBOX        "Display",IDC_STATIC,7,115,391,70
-    CONTROL         "&Keep aspect ratio",IDC_ASPECTRATIO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,129,72,10
-    LTEXT           "BGM source:",IDC_STATIC,14,228,41,8
-    CONTROL         "&Full screen start",IDC_FULLSCREEN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,129,67,10
-    EDITTEXT        IDC_MSGFILE,70,56,270,14,ES_AUTOHSCROLL | ES_READONLY
-    GROUPBOX        "Audio",IDC_STATIC,7,190,391,85
-    COMBOBOX        IDC_CD,57,206,48,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_BGM,57,226,48,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Core:",IDC_STATIC,121,209,19,8
-    COMBOBOX        IDC_OPL_CORE,142,206,44,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "S&tereo",IDC_STEREO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,271,228,34,10
-    PUSHBUTTON      "&Default",IDC_DEFAULT,348,279,50,14
-    CONTROL         "Surr&ound",IDC_SURROUNDOPL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,217,228,42,10
-    LTEXT           "Sample rate:",IDC_STATIC,308,209,42,8
-    EDITTEXT        IDC_SAMPLERATE,351,206,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Sample rate:",IDC_STATIC,121,229,42,8
-    EDITTEXT        IDC_OPLSR,167,226,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "Buffer size:",IDC_STATIC,311,229,38,8
-    EDITTEXT        IDC_AUDIOBUFFER,351,226,40,14,ES_AUTOHSCROLL | ES_NUMBER
-    PUSHBUTTON      "&Browse",IDC_BRGAME,348,7,50,14
-    CONTROL         "Message file:",IDC_USEMSGFILE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,59,56,8
-    CONTROL         "Enable &touch overlay",IDC_TOUCHOVERLAY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,147,80,10
-    LTEXT           "Quality:",IDC_STATIC,14,248,26,8
-    LTEXT           "Low                              High",IDC_STATIC,31,262,88,8
-    CONTROL         "",IDC_QUALITY,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,43,247,60,15
-    LTEXT           "Music volume:",IDC_STATIC,118,248,46,8
-    LTEXT           "Low                                      High",IDC_STATIC,153,262,104,8
-    CONTROL         "",IDC_MUSICVOLUME,"msctls_trackbar32",WS_TABSTOP,165,247,80,15
-    LTEXT           "Sound volume:",IDC_STATIC,256,249,48,8
-    LTEXT           "Low                                      High",IDC_STATIC,291,262,104,8
-    CONTROL         "",IDC_SOUNDVOLUME,"msctls_trackbar32",WS_TABSTOP,303,248,80,15
-    EDITTEXT        IDC_FONTFILE,70,38,270,14,ES_AUTOHSCROLL | ES_READONLY
-    CONTROL         "Font file:",IDC_USEFONTFILE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,41,56,8
-    GROUPBOX        "Logging",IDC_STATIC,7,80,391,30
-    LTEXT           "Log level:",IDC_STATIC,14,95,32,8
-    COMBOBOX        IDC_LOGLEVEL,46,92,61,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Log file:",IDC_USELOGFILE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,120,95,40,8
-    EDITTEXT        IDC_LOGFILE,160,92,180,14,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "&Browse",IDC_BRFONT,348,38,50,14,WS_DISABLED
-    PUSHBUTTON      "&Browse",IDC_BRMSG,348,56,50,14,WS_DISABLED
-    PUSHBUTTON      "&Browse",IDC_BRLOG,348,92,50,14,WS_DISABLED
-    CONTROL         "Enable A&VI animation",IDC_ENABLEAVI,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,129,77,10
-    GROUPBOX        "OPL",IDC_STATIC,114,195,150,50
-    LTEXT           "Chip:",IDC_STATIC,197,209,18,8
-    COMBOBOX        IDC_OPL_CHIP,217,206,40,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Enable &GLSL",IDC_GLSL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,147,55,10
-    CONTROL         "Enable &HDR",IDC_HDR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,147,53,10
-    EDITTEXT        IDC_SHADERFILE,69,165,270,14,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "&Browse",IDC_BRSHADER,348,165,50,14,WS_DISABLED
-    LTEXT           "Shader code:",IDC_STATIC,14,168,50,8
-    LTEXT           "Texture size:",IDC_STATIC,275,148,45,8
-    EDITTEXT        IDC_TEXTUREWIDTH,320,145,30,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_TEXTUREHEIGHT,360,145,31,14,ES_AUTOHSCROLL | ES_NUMBER
-    CTEXT           "X",IDC_STATIC,350,148,10,8
-    LTEXT           "Window size:",IDC_STATIC,275,130,45,8
-    CTEXT           "X",IDC_STATIC,350,130,10,8
-    EDITTEXT        IDC_WINDOWWIDTH,320,127,30,14,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_WINDOWHEIGHT,360,127,31,14,ES_AUTOHSCROLL | ES_NUMBER
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
-BEGIN
-    IDD_LAUNCHER, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 398
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 293
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// AFX_DIALOG_LAYOUT
-//
-
-IDD_LAUNCHER AFX_DIALOG_LAYOUT
-BEGIN
-    0
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// RT_MANIFEST
-//
-
-APP_MANIFEST            RT_MANIFEST             "Application.manifest"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDI_SDLPAL              ICON                    "../sdlpal.ico"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Version
-//
-
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,0,0,1
- PRODUCTVERSION 2,0,0,1
- FILEFLAGSMASK 0x3fL
-#ifdef _DEBUG
- FILEFLAGS 0x1L
-#else
- FILEFLAGS 0x0L
-#endif
- FILEOS 0x40004L
- FILETYPE 0x1L
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "080404b0"
-        BEGIN
-            VALUE "CompanyName", "SDLPAL Team"
-            VALUE "FileDescription", "SDLPAL Main executable"
-            VALUE "FileVersion", "2.0.0.1"
-            VALUE "InternalName", "sdlpal.exe"
-            VALUE "LegalCopyright", "Copyright (C) SDLPAL Team 2009 - 2018"
-            VALUE "OriginalFilename", "sdlpal.exe"
-            VALUE "ProductName", "SDL PAL"
-            VALUE "ProductVersion", "2.0.0.1"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x804, 1200
-    END
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// String Table
-//
-
-STRINGTABLE
-BEGIN
-    IDS_CONFIRM             "Confirm"
-END
-
-STRINGTABLE
-BEGIN
-    IDC_BRGAME              "Open game resource folder"
-    IDC_BRMSG               "Select customized game message file"
-END
-
-STRINGTABLE
-BEGIN
-    IDC_MSGFILE             "Message file (*.msg)|*.msg|All files (*.*)|*.*||"
-    IDC_LOGLEVEL            "Verbose;Debug;Informational;Warning;Error;Fatal"
-    IDC_BRFONT              "Select customized font file"
-    IDC_FONTFILE            "Font file (*.bdf)|*.bdf|All files (*.*)|*.*||"
-END
-
-STRINGTABLE
-BEGIN
-    IDC_BRLOG               "Select file to record logs"
-    IDC_LOGFILE             "Log file (*.log, *.txt)|*.log;*.txt|All files (*.*)|*.*||"
-    IDC_BRSHADER            "Select shader code file"
-    IDC_SHADERFILE          "GLSLP meta-shaders file(*.glslp)|*.glslp|GLSL shader code file(*.glsl)|*.glsl|All files (*.*)|*.*||"
-END
-
-#endif    // 非特定语言 resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// 中文(简体，中国) resources
+// いゅ (虏砰い地チ㎝瓣) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
@@ -393,12 +185,210 @@ BEGIN
     IDC_SHADERFILE          "特效定义文件(*.glslp)|*.glslp|着色器代码文件(*.glsl)|*.glsl|所有文件 (*.*)|*.*||"
 END
 
-#endif    // 中文(简体，中国) resources
+#endif    // いゅ (虏砰い地チ㎝瓣) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// 中文(繁体，中国台湾) resources
+// い┦ resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+#pragma code_page(950)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_LAUNCHER DIALOGEX 0, 0, 405, 300
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "SDL PAL Launcher"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "&Launch game",IDOK,177,279,50,14
+    PUSHBUTTON      "E&xit",IDCANCEL,7,279,50,14
+    LTEXT           "Game resource path:",IDC_STATIC,14,10,68,8
+    EDITTEXT        IDC_GAMEPATH,84,7,256,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "CD source:",IDC_STATIC,18,209,36,8
+    GROUPBOX        "Font && Language",IDC_STATIC,7,25,391,50
+    GROUPBOX        "Display",IDC_STATIC,7,115,391,70
+    CONTROL         "&Keep aspect ratio",IDC_ASPECTRATIO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,129,72,10
+    LTEXT           "BGM source:",IDC_STATIC,14,228,41,8
+    CONTROL         "&Full screen start",IDC_FULLSCREEN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,129,67,10
+    EDITTEXT        IDC_MSGFILE,70,56,270,14,ES_AUTOHSCROLL | ES_READONLY
+    GROUPBOX        "Audio",IDC_STATIC,7,190,391,85
+    COMBOBOX        IDC_CD,57,206,48,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_BGM,57,226,48,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Core:",IDC_STATIC,121,209,19,8
+    COMBOBOX        IDC_OPL_CORE,142,206,44,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "S&tereo",IDC_STEREO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,271,228,34,10
+    PUSHBUTTON      "&Default",IDC_DEFAULT,348,279,50,14
+    CONTROL         "Surr&ound",IDC_SURROUNDOPL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,217,228,42,10
+    LTEXT           "Sample rate:",IDC_STATIC,308,209,42,8
+    EDITTEXT        IDC_SAMPLERATE,351,206,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Sample rate:",IDC_STATIC,121,229,42,8
+    EDITTEXT        IDC_OPLSR,167,226,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Buffer size:",IDC_STATIC,311,229,38,8
+    EDITTEXT        IDC_AUDIOBUFFER,351,226,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    PUSHBUTTON      "&Browse",IDC_BRGAME,348,7,50,14
+    CONTROL         "Message file:",IDC_USEMSGFILE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,59,56,8
+    CONTROL         "Enable &touch overlay",IDC_TOUCHOVERLAY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,147,80,10
+    LTEXT           "Quality:",IDC_STATIC,14,248,26,8
+    LTEXT           "Low                              High",IDC_STATIC,31,262,88,8
+    CONTROL         "",IDC_QUALITY,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,43,247,60,15
+    LTEXT           "Music volume:",IDC_STATIC,118,248,46,8
+    LTEXT           "Low                                      High",IDC_STATIC,153,262,104,8
+    CONTROL         "",IDC_MUSICVOLUME,"msctls_trackbar32",WS_TABSTOP,165,247,80,15
+    LTEXT           "Sound volume:",IDC_STATIC,256,249,48,8
+    LTEXT           "Low                                      High",IDC_STATIC,291,262,104,8
+    CONTROL         "",IDC_SOUNDVOLUME,"msctls_trackbar32",WS_TABSTOP,303,248,80,15
+    EDITTEXT        IDC_FONTFILE,70,38,270,14,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "Font file:",IDC_USEFONTFILE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,41,56,8
+    GROUPBOX        "Logging",IDC_STATIC,7,80,391,30
+    LTEXT           "Log level:",IDC_STATIC,14,95,32,8
+    COMBOBOX        IDC_LOGLEVEL,46,92,61,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Log file:",IDC_USELOGFILE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,120,95,40,8
+    EDITTEXT        IDC_LOGFILE,160,92,180,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "&Browse",IDC_BRFONT,348,38,50,14,WS_DISABLED
+    PUSHBUTTON      "&Browse",IDC_BRMSG,348,56,50,14,WS_DISABLED
+    PUSHBUTTON      "&Browse",IDC_BRLOG,348,92,50,14,WS_DISABLED
+    CONTROL         "Enable A&VI animation",IDC_ENABLEAVI,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,170,129,77,10
+    GROUPBOX        "OPL",IDC_STATIC,114,195,150,50
+    LTEXT           "Chip:",IDC_STATIC,197,209,18,8
+    COMBOBOX        IDC_OPL_CHIP,217,206,40,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Enable &GLSL",IDC_GLSL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,147,55,10
+    CONTROL         "Enable &HDR",IDC_HDR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,90,147,53,10
+    EDITTEXT        IDC_SHADERFILE,69,165,270,14,ES_AUTOHSCROLL | ES_READONLY
+    PUSHBUTTON      "&Browse",IDC_BRSHADER,348,165,50,14,WS_DISABLED
+    LTEXT           "Shader code:",IDC_STATIC,14,168,50,8
+    LTEXT           "Texture size:",IDC_STATIC,275,148,45,8
+    EDITTEXT        IDC_TEXTUREWIDTH,320,145,30,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_TEXTUREHEIGHT,360,145,31,14,ES_AUTOHSCROLL | ES_NUMBER
+    CTEXT           "X",IDC_STATIC,350,148,10,8
+    LTEXT           "Window size:",IDC_STATIC,275,130,45,8
+    CTEXT           "X",IDC_STATIC,350,130,10,8
+    EDITTEXT        IDC_WINDOWWIDTH,320,127,30,14,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_WINDOWHEIGHT,360,127,31,14,ES_AUTOHSCROLL | ES_NUMBER
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_LAUNCHER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 398
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 293
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_LAUNCHER AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// RT_MANIFEST
+//
+
+APP_MANIFEST            RT_MANIFEST             "Application.manifest"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 2,0,0,1
+ PRODUCTVERSION 2,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", "SDLPAL Team"
+            VALUE "FileDescription", "SDLPAL Main executable"
+            VALUE "FileVersion", "2.0.0.1"
+            VALUE "InternalName", "sdlpal.exe"
+            VALUE "LegalCopyright", "Copyright (C) SDLPAL Team 2009 - 2018 (C)SOFTSTAR 1995 - 2021"
+            VALUE "OriginalFilename", "sdlpal.exe"
+            VALUE "ProductName", "SDL PAL"
+            VALUE "ProductVersion", "2.0.0.1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_CONFIRM             "Confirm"
+END
+
+STRINGTABLE
+BEGIN
+    IDC_BRGAME              "Open game resource folder"
+    IDC_BRMSG               "Select customized game message file"
+END
+
+STRINGTABLE
+BEGIN
+    IDC_MSGFILE             "Message file (*.msg)|*.msg|All files (*.*)|*.*||"
+    IDC_LOGLEVEL            "Verbose;Debug;Informational;Warning;Error;Fatal"
+    IDC_BRFONT              "Select customized font file"
+    IDC_FONTFILE            "Font file (*.bdf)|*.bdf|All files (*.*)|*.*||"
+END
+
+STRINGTABLE
+BEGIN
+    IDC_BRLOG               "Select file to record logs"
+    IDC_LOGFILE             "Log file (*.log, *.txt)|*.log;*.txt|All files (*.*)|*.*||"
+    IDC_BRSHADER            "Select shader code file"
+    IDC_SHADERFILE          "GLSLP meta-shaders file(*.glslp)|*.glslp|GLSL shader code file(*.glsl)|*.glsl|All files (*.*)|*.*||"
+END
+
+#endif    // い┦ resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// いゅ (羉砰芖) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHT)
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL
@@ -514,6 +504,16 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON                    "icon1.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
@@ -544,7 +544,7 @@ BEGIN
     IDC_SHADERFILE          "疭﹚竡郎(*.glslp)|*.glslp|帝︹竟絏郎(*.glsl)|*.glsl|┮Τ郎 (*.*)|*.*||"
 END
 
-#endif    // 中文(繁体，中国台湾) resources
+#endif    // いゅ (羉砰芖) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

@@ -26,7 +26,11 @@ extern MENUITEM gSelectTargetMenuItem[30];
 
 static WORD GetSavedTimes(int iSaveSlot)
 {
+#ifdef PAL_STEAM
+	FILE *fp = UTIL_OpenFileAtPath("SAVE", PAL_va(0, "%d.rpg", iSaveSlot));
+#else
 	FILE *fp = UTIL_OpenFileAtPath(gConfig.pszSavePath, PAL_va(0, "%d.rpg", iSaveSlot));
+#endif
 	WORD wSavedTimes = 0;
 	if (fp != NULL)
 	{
@@ -125,7 +129,6 @@ reset:
    {
 	   gUI_Buttom[buttomLOGO].visable = TRUE;
 	   gUI_Buttom[buttomLOGO2].visable = TRUE;
-	   if (gpScreen240) gDraw240 = TRUE;
       //
       // Activate the menu
       //
@@ -148,17 +151,14 @@ reset:
          //
          // Load game
          //
-		  if (gpScreen240) gDraw240 = TRUE;
          VIDEO_BackupScreen(gpScreen);
 		 wItemSelected = PAL_SaveSlotMenu(1, FALSE);
-		 if (gpScreen240) gDraw240 = TRUE;
          VIDEO_RestoreScreen(gpScreen);
          VIDEO_UpdateScreen(NULL);
          if (wItemSelected != MENUITEM_VALUE_CANCELLED)
          {
             break;
          }
-		 VIDEO_Clean240();
          wDefaultItem = 1;
       }
    }
@@ -169,8 +169,6 @@ reset:
    //
    AUDIO_PlayMusic(0, FALSE, 1);
    PAL_FadeOut(1);
-   VIDEO_Clean240();
-   gDraw240 = FALSE;
    if (wItemSelected == 0)
    {
       PAL_PlayAVI("3.avi");
@@ -210,22 +208,22 @@ PAL_SaveSlotMenu(
    const SDL_Rect  rectAuto = { 78, 7 + 38 * 4, 120 + dx, 38 };
    BOOL buttomstatus = gUI_Buttom[buttomBACK].visable;
    gUI_Buttom[buttomBACK].visable = TRUE;
-   if (gpScreen240) gDraw240 = TRUE;
    //
    // Create the boxes and create the menu items
    //
    int slotmax = 5;
+#ifndef PAL_STEAM
    if (fIsSave == FALSE)
    {
 	   slotmax = 6;
 	   rgpBox[5] = PAL_CreateSingleLineBox(PAL_XY(78, 7 + 38 * 4), 6 + (w > 4 ? w - 4 : 0), FALSE);
 	   rgMenuItem[5].wValue = 6;
 	   rgMenuItem[5].fEnabled = TRUE;
-	   rgMenuItem[5].wNumWord = LOADMENU_LABEL_SLOT_FIRST + 0x6FFF;
+	   rgMenuItem[5].wNumWord = LOADMENU_LABEL_SLOT_AUTOSAVE;
 	   rgMenuItem[5].pos = PAL_XY(78 + 16, 17 + 38 * 4);
 	   rgMenuItem[5].size = PAL_XY(6 * 16, 18);
    }
-
+#endif
    for (i = 0; i < 5; i++)
    {
 	   // Fix render problem with shadow
@@ -253,11 +251,11 @@ PAL_SaveSlotMenu(
 
    VIDEO_UpdateScreen(&rect);
    VIDEO_UpdateScreen(&rectAuto);
-   if (gpScreen240) gDraw240 = TRUE;
+
    //
    // Activate the menu
    //
-   wItemSelected = PAL_ReadMenu(NULL, rgMenuItem, 6, wDefaultSlot - 1, MENUITEM_COLOR);
+   wItemSelected = PAL_ReadMenu(NULL, rgMenuItem, slotmax, wDefaultSlot - 1, MENUITEM_COLOR);
 
    //
    // Delete the boxes
@@ -314,7 +312,7 @@ PAL_SelectionMenu(
 	for (i = 0; i < nWords; i++)
 		if (nWords > i && !wItems[i])
 			return MENUITEM_VALUE_CANCELLED;
-	if (gpScreen240) gDraw240 = TRUE;
+
 	//
 	// Create menu items
 	//
@@ -336,7 +334,7 @@ PAL_SelectionMenu(
 	}
 
 	VIDEO_UpdateScreen(&rect);
-	if (gpScreen240) gDraw240 = TRUE;
+
 	//
 	// Activate the menu
 	//
@@ -349,7 +347,6 @@ PAL_SelectionMenu(
 	{
 		PAL_DeleteBox(rgpBox[i]);
 	}
-	VIDEO_Clean240();
 	VIDEO_UpdateScreen(&rect);
 
 	return wReturnValue;
@@ -591,7 +588,11 @@ PAL_SystemMenu(
       { 6,      SYSMENU_LABEL_BATTLEMODE,    TRUE,     PAL_XY(53, 72 + 90), PAL_XY(4 * 16, 16) },
 #endif
    };
-   const int           nSystemMenuItem = sizeof(rgSystemMenuItem) / sizeof(MENUITEM) -1;
+   const int           nSystemMenuItem = sizeof(rgSystemMenuItem) / sizeof(MENUITEM);
+
+#if defined (__IOS__)
+   nSystemMenuItem--;
+#endif
 
    //
    // Create the menu box.

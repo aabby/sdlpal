@@ -48,6 +48,7 @@ typedef enum tagPALCFG_ITEM
 	PALCFG_ENABLEAVIPLAY,
     PALCFG_ENABLEGLSL,
     PALCFG_ENABLEHDR,
+	PALCFG_MOUSE,
 	/* Booleans */
 	PALCFG_BOOLEAN_MAX,
 
@@ -66,7 +67,7 @@ typedef enum tagPALCFG_ITEM
 	PALCFG_RESAMPLEQUALITY,
 	PALCFG_SAMPLERATE,
 	PALCFG_MUSICVOLUME,
-	PALCFG_SOUNDVOLUME,
+	PALCFG_SOUNDVOLUME, //18
 	PALCFG_WINDOWHEIGHT,
 	PALCFG_WINDOWWIDTH,
     PALCFG_TEXTUREHEIGHT,
@@ -92,8 +93,8 @@ typedef enum tagPALCFG_ITEM
 	PALCFG_SHADER,
 	/* Strings */
 	PALCFG_STRING_MAX,
-
 	PALCFG_ALL_MAX = PALCFG_STRING_MAX
+	
 } PALCFG_ITEM;
 
 typedef enum tagPALCFG_TYPE
@@ -212,12 +213,14 @@ typedef struct tagCONFIGURATION
 	BOOL             fEnableAviPlay;
 	BOOL             fEnableGLSL;
     BOOL             fEnableHDR;
-	BOOL             fMode240;
 #if USE_RIX_EXTRA_INIT
 	uint32_t        *pExtraFMRegs;
 	uint8_t         *pExtraFMVals;
 	uint32_t         dwExtraLength;
 #endif
+    BOOL             fIsIOS;
+    BOOL             fIsIPAD;
+	BOOL             fMouse;
 } CONFIGURATION, *LPCONFIGURATION;
 
 PAL_C_LINKAGE_BEGIN

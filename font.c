@@ -108,11 +108,23 @@ static void PAL_LoadEmbeddedFont(void)
 	//
 	// Load the wor16.asc file.
 	//
-	if (NULL == (fp = UTIL_OpenFile("wor16.asc")))
+	CODEPAGE CP;
+	if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
 	{
-		return;
+		if (NULL == (fp = UTIL_OpenFile("WOR16_chs.ASC")))
+		{
+			return;
+		}
+		CP = CP_GBK;
 	}
-
+	else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
+	{
+		if (NULL == (fp = UTIL_OpenFile("WOR16_cht.ASC")))
+		{
+			return;
+		}
+		CP = CP_BIG5;
+	}
 	//
 	// Get the size of wor16.asc file.
 	//
@@ -144,7 +156,7 @@ static void PAL_LoadEmbeddedFont(void)
 	// Note: 100% probability is impossible as the function does not recognize some special
 	// characters such as bopomofo that may be used by 'wor16.asc'.
 	//
-	if (PAL_DetectCodePageForString(char_buf, nBytes, CP_BIG5, &i) != CP_BIG5 || i < 99)
+	if (PAL_DetectCodePageForString(char_buf, nBytes, CP, &i) != CP || i < 99)
 	{
 		free(char_buf);
 		return;
@@ -154,22 +166,22 @@ static void PAL_LoadEmbeddedFont(void)
 	// Convert characters into unicode
 	// Explictly specify BIG5 here for compatibility with codepage auto-detection
 	//
-	nChars = PAL_MultiByteToWideCharCP(CP_BIG5, char_buf, nBytes, NULL, 0);
+	nChars = PAL_MultiByteToWideCharCP(CP, char_buf, nBytes, NULL, 0);
 	if (NULL == (wchar_buf = (wchar_t *)malloc(nChars * sizeof(wchar_t))))
 	{
 		free(char_buf);
 		return;
 	}
-	PAL_MultiByteToWideCharCP(CP_BIG5, char_buf, nBytes, wchar_buf, nChars);
+	PAL_MultiByteToWideCharCP(CP, char_buf, nBytes, wchar_buf, nChars);
 	free(char_buf);
 
 	//
 	// Read bitmaps from wor16.fon file.
 	//
-	if (gpGlobals->wLanguage == 0)
-		fp = UTIL_OpenFile("wor16.fon");
-	else
-		fp = UTIL_OpenFile("wor16chs.fon");
+	if (CP == CP_GBK)
+		fp = UTIL_OpenFile("WOR16_chs.FON");
+	else if (CP == CP_BIG5)
+		fp = UTIL_OpenFile("WOR16_cht.FON");
 
 	//
 	// The font glyph data begins at offset 0x682 in wor16.fon.

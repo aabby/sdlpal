@@ -24,15 +24,13 @@
 #include <math.h>
 
 INT omousex, omousey;
-INT mousex, mousey, mousey240;
+INT mousex, mousey;
 BOOL mouseLkey, mouseRkey, mouseMkey;
 
 extern float gpScreenW_Magnification;
 extern float gpScreenH_Magnification;
-extern float gpScreenH_Magnification240;
 extern float gpScreenW_MagnificationOriginal;
 extern float gpScreenH_MagnificationOriginal;
-extern float gpScreenH_MagnificationOriginal240;
 extern SDL_Rect           gViewRect;
 extern DWORD g_dwScreenWidth;
 extern DWORD g_dwScreenHeight;
@@ -265,6 +263,7 @@ PAL_UpdateKeyboardState(
          if (dwCurrentTime > rgdwKeyLastTime[i])
          {
             PAL_KeyDown(g_KeyMap[i][1], (rgdwKeyLastTime[i] != 0));
+			
             if (gConfig.fEnableKeyRepeat)
             {
                rgdwKeyLastTime[i] = dwCurrentTime + (rgdwKeyLastTime[i] == 0 ? 200 : 75);
@@ -372,12 +371,12 @@ PAL_MouseEventFilter(
 
 --*/
 {
-#if PAL_HAS_MOUSE
+   if (gConfig.fMouse == FALSE) return;
    static short hitTest = 0; // Double click detect;   
 
-   double       screenWidth, gridWidth;
-   double       screenHeight, gridHeight;
-   double       mx, my, my240;
+   double       gridWidth;
+   double       gridHeight;
+   double       mx, my;
    double       thumbx;
    double       thumby;
    INT          gridIndex;
@@ -394,13 +393,10 @@ PAL_MouseEventFilter(
    {
 	   mx = (lpEvent->button.x - gViewRect.x) * gpScreenW_MagnificationOriginal;
 	   my = (lpEvent->button.y - gViewRect.y) * gpScreenH_MagnificationOriginal;
-	   my240 = (lpEvent->button.y - gViewRect.y) * gpScreenH_MagnificationOriginal240;
 	   mousex = omousex = mx;
 	   mousey = omousey = my;
-	   mousey240 = my240;
 	   if (mousex > 319) mousex = 319;
 	   if (mousey > 199) mousey = 199;
-	   if (mousey240 > 239) mousey240 = 239;
    }
 
    if (lpEvent->type == SDL_MOUSEBUTTONDOWN)
@@ -510,68 +506,47 @@ PAL_MouseEventFilter(
 				   int y = PAL_Y(g_MenuCtrl.MenuItem[i].pos);
 				   int w = PAL_X(g_MenuCtrl.MenuItem[i].size);
 				   int h = PAL_Y(g_MenuCtrl.MenuItem[i].size);
-				   if (gDraw240)
+
+				   if (g_MenuCtrl.Click && mx >= x && mx < x + w
+					   && my >= y && my < y + h
+					   )
 				   {
-					   if (g_MenuCtrl.Click && mx >= x && mx < x + w
-						   && my240 >= y && my240 < y + h
-						   )
-					   {
-						   g_MenuCtrl.Click = 2;
-						   g_MenuCtrl.Select = i;
-						   break;
-					   }
+					   g_MenuCtrl.Click = 2;
+					   g_MenuCtrl.Select = i;
+					   break;
 				   }
-				   else
-				   {
-					   if (g_MenuCtrl.Click && mx >= x && mx < x + w
-						   && my >= y && my < y + h
-						   )
-					   {
-						   g_MenuCtrl.Click = 2;
-						   g_MenuCtrl.Select = i;
-						   break;
-					   }
-				   }
+
 			   }
 		   }
 	   }
-	   else if (mouseLkey == TRUE && (lpEvent->type == SDL_MOUSEBUTTONDOWN || lpEvent->type == SDL_MOUSEMOTION)) //Button dwon or motion
+	   else if (g_MenuCtrl.MenuItem != NULL && mouseLkey == TRUE && (lpEvent->type == SDL_MOUSEBUTTONDOWN || lpEvent->type == SDL_MOUSEMOTION)) //Button dwon or motion
 	   {
-		   for (int i = 0; i < g_MenuCtrl.Count; i++)
+		   if (g_MenuCtrl.Click == 0) //if double click, Click == 2
 		   {
-			   if (g_MenuCtrl.MenuItem[i].fEnabled)
+			   for (int i = 0; i < g_MenuCtrl.Count; i++)
 			   {
-				   int x = PAL_X(g_MenuCtrl.MenuItem[i].pos);
-				   int y = PAL_Y(g_MenuCtrl.MenuItem[i].pos);
-				   int w = PAL_X(g_MenuCtrl.MenuItem[i].size);
-				   int h = PAL_Y(g_MenuCtrl.MenuItem[i].size);
-				   if (gDraw240)
+				   if (g_MenuCtrl.MenuItem[i].fEnabled)
 				   {
-					   if (mx >= x && mx < x + w
-						   && my240 >= y && my240 < y + h
-						   )
-					   {
-						   if (lpEvent->type == SDL_MOUSEBUTTONDOWN && lpEvent->button.button == 1)
-							   g_MenuCtrl.Click = 1;
-						   g_MenuCtrl.Select = i;
-						   break;
-					   }
-				   }
-				   else
-				   {
+					   int x = PAL_X(g_MenuCtrl.MenuItem[i].pos);
+					   int y = PAL_Y(g_MenuCtrl.MenuItem[i].pos);
+					   int w = PAL_X(g_MenuCtrl.MenuItem[i].size);
+					   int h = PAL_Y(g_MenuCtrl.MenuItem[i].size);
+
 					   if (mx >= x && mx < x + w
 						   && my >= y && my < y + h
 						   )
 					   {
 						   if (lpEvent->type == SDL_MOUSEBUTTONDOWN && lpEvent->button.button == 1)
+						   {
 							   g_MenuCtrl.Click = 1;
+						   }
 						   g_MenuCtrl.Select = i;
 						   break;
 					   }
+
 				   }
 			   }
 		   }
-
 	   }
 
 	   return;
@@ -731,8 +706,6 @@ PAL_MouseEventFilter(
       }
       break;
    }
-
-#endif
 }
 
 static VOID
@@ -1215,6 +1188,8 @@ PAL_TouchEventFilter(
 #endif
 }
 
+static int lastx = 0, lasty = 0;
+static Uint32 lastFlags = 0;
 static int SDLCALL
 PAL_EventFilter(
    const SDL_Event       *lpEvent
@@ -1242,10 +1217,7 @@ PAL_EventFilter(
    case SDL_WINDOWEVENT:
       if (lpEvent->window.event == SDL_WINDOWEVENT_RESIZED)
       {
-         //
-         // resized the window
-         //
-         VIDEO_Resize(lpEvent->window.data1, lpEvent->window.data2);
+		  //VIDEO_Resize(lpEvent->window.data1, lpEvent->window.data2);
       }
       break;
 

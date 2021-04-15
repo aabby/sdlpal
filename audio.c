@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -30,6 +30,10 @@
 #include "midi.h"
 #include "aviplay.h"
 #include <math.h>
+
+#ifdef PAL_STEAM
+extern char OGG_MOD_PATH[1024];
+#endif
 
 #define PAL_CDTRACK_BASE    10000
 
@@ -269,6 +273,24 @@ AUDIO_OpenDevice(
    //
    gAudioDevice.pSoundPlayer = SOUND_Init();
 
+#ifdef PAL_STEAM
+   if (OGG_MOD_PATH[0] != '\0')
+   {
+	   gConfig.eMusicType = MUSIC_OGG;
+   }
+   else
+   {
+	   if (gConfig.eMusicType == MUSIC_OGG)
+	   {
+		   struct stat info;
+		   if (stat("ogg", &info) == 0 && info.st_mode & S_IFDIR)
+		   {
+		   }
+		   else
+			   gConfig.eMusicType = MUSIC_RIX;
+	   }
+   }
+#endif
    //
    // Initialize the music subsystem.
    //
@@ -517,13 +539,22 @@ AUDIO_PlayMusic(
 		//
 		AUDIO_PlayCDTrack(-1);
 	}
-
+#ifdef PAL_STEAM
+	if (OGG_MOD_PATH[0] == '\0')
+	{
+		if (gConfig.eMusicType == MUSIC_MIDI)
+		{
+			MIDI_Play(iNumRIX, fLoop);
+			return;
+		}
+	}
+#else
    if (gConfig.eMusicType == MUSIC_MIDI)
    {
       MIDI_Play(iNumRIX, fLoop);
       return;
    }
-
+#endif
    AUDIO_Lock();
    if (gAudioDevice.pMusPlayer)
    {

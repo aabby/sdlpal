@@ -1145,45 +1145,51 @@ PAL_BattleUIUpdate(
 			 else
 				 BACKvisable = TRUE;
 
-			 Setup_MenuCtrl(MenuItem_kBattleUISelectMove, 4, g_Battle.UI.wSelectedAction);
-			 for (int i = 0; i < 4; i++)
+			 if (gpGlobals->fMOUSE == TRUE)
 			 {
-				 if (i == 1)
-					 g_MenuCtrl.MenuItem[i].fEnabled = PAL_BattleUIIsActionValid(kBattleUIActionMagic);
-				 else if (i == 2)
-					 g_MenuCtrl.MenuItem[i].fEnabled = PAL_BattleUIIsActionValid(kBattleUIActionCoopMagic);
-
-				 if (g_MenuCtrl.Click != 0 && g_MenuCtrl.Select == i && g_MenuCtrl.MenuItem[i].fEnabled == TRUE)
+				 Setup_MenuCtrl(MenuItem_kBattleUISelectMove, 4, g_Battle.UI.wSelectedAction);
+				 if (g_MenuCtrl.MenuItem != NULL)
 				 {
-					 g_Battle.UI.wSelectedAction = i;
-					 switch (i)
+					 for (int i = 0; i < 4; i++)
 					 {
-					 case 0:
-						 g_InputState.dir = kDirNorth;
-						 break;
-					 case 1:
-						 g_InputState.dir = kDirWest;
-						 break;
-					 case 2:
-						 g_InputState.dir = kDirEast;
-						 break;
-					 case 3:
-						 g_InputState.dir = kDirSouth;
-						 break;
-					 }
+						 if (i == 1)
+							 g_MenuCtrl.MenuItem[i].fEnabled = PAL_BattleUIIsActionValid(kBattleUIActionMagic);
+						 else if (i == 2)
+							 g_MenuCtrl.MenuItem[i].fEnabled = PAL_BattleUIIsActionValid(kBattleUIActionCoopMagic);
 
-					 if (g_MenuCtrl.Click == 2)
-					 {
-						 g_MenuCtrl.Click = 0;
-						 if (g_MenuCtrl.LastSelect == i)
+						 if (g_MenuCtrl.Click != 0 && g_MenuCtrl.Select == i && g_MenuCtrl.MenuItem[i].fEnabled == TRUE)
 						 {
-							 g_InputState.dwKeyPress |= kKeySearch;
-							 Setup_MenuCtrl(NULL, 0, 0);
+							 g_Battle.UI.wSelectedAction = i;
+							 switch (i)
+							 {
+							 case 0:
+								 g_InputState.dir = kDirNorth;
+								 break;
+							 case 1:
+								 g_InputState.dir = kDirWest;
+								 break;
+							 case 2:
+								 g_InputState.dir = kDirEast;
+								 break;
+							 case 3:
+								 g_InputState.dir = kDirSouth;
+								 break;
+							 }
+
+							 if (g_MenuCtrl.Click == 2)
+							 {
+								 g_MenuCtrl.Click = 0;
+								 if (g_MenuCtrl.LastSelect == i)
+								 {
+									 g_InputState.dwKeyPress |= kKeySearch;
+									 Setup_MenuCtrl(NULL, 0, 0);
+								 }
+								 else
+									 g_MenuCtrl.LastSelect = i;
+
+								 break;
+							 }
 						 }
-						 else
-							 g_MenuCtrl.LastSelect = i;
-						 
-						 break;
 					 }
 				 }
 			 }

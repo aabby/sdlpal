@@ -3073,7 +3073,6 @@ PAL_RunTriggerScript(
 
          if (PAL_DialogIsPlayingRNG())
          {
-			 if (gpScreen240) gDraw240 = TRUE;
             VIDEO_RestoreScreen(gpScreen);
          }
          else if (gpGlobals->fInBattle)
@@ -3232,7 +3231,6 @@ PAL_RunTriggerScript(
          // Restore the screen
          //
          PAL_ClearDialog(TRUE);
-		 if (gpScreen240) gDraw240 = TRUE;
          VIDEO_RestoreScreen(gpScreen);
          VIDEO_UpdateScreen(NULL);
          wScriptEntry++;
@@ -3253,7 +3251,6 @@ PAL_RunTriggerScript(
                   // Restore the screen
                   //
                   PAL_ClearDialog(TRUE);
-				  if (gpScreen240) gDraw240 = TRUE;
                   VIDEO_RestoreScreen(gpScreen);
                   VIDEO_UpdateScreen(NULL);
                }

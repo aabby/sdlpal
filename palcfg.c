@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -49,6 +49,7 @@ static const ConfigItem gConfigItems[PALCFG_ALL_MAX] = {
 	{ PALCFG_ENABLEAVIPLAY,     PALCFG_BOOLEAN,  "EnableAviPlay",     13, MAKE_BOOLEAN(TRUE,                          FALSE,                 TRUE) },
 	{ PALCFG_ENABLEGLSL,        PALCFG_BOOLEAN,  "EnableGLSL",        10, MAKE_BOOLEAN(FALSE,                         FALSE,                 TRUE) },
     { PALCFG_ENABLEHDR,         PALCFG_BOOLEAN,  "EnableHDR",          9, MAKE_BOOLEAN(FALSE,                         FALSE,                 TRUE) },
+	{ PALCFG_MOUSE ,            PALCFG_BOOLEAN,  "Mouse",              5, MAKE_BOOLEAN(FALSE,                         FALSE,                 TRUE) },
 
 	{ PALCFG_SURROUNDOPLOFFSET, PALCFG_INTEGER,  "SurroundOPLOffset", 17, MAKE_INTEGER(384,                           INT32_MIN,             INT32_MAX) },
 	{ PALCFG_LOGLEVEL,          PALCFG_INTEGER,  "LogLevel",           8, MAKE_INTEGER(PAL_DEFAULT_LOGLEVEL,          LOGLEVEL_MIN,          LOGLEVEL_MAX) },
@@ -78,7 +79,7 @@ static const ConfigItem gConfigItems[PALCFG_ALL_MAX] = {
 	{ PALCFG_RIXEXTRAINIT,      PALCFG_STRING,   "RIXExtraInit",      12, MAKE_STRING(NULL) },
 	{ PALCFG_MIDICLIENT,        PALCFG_STRING,   "MIDIClient",        10, MAKE_STRING(NULL) },
 	{ PALCFG_SCALEQUALITY,      PALCFG_STRING,   "ScaleQuality",      12, MAKE_STRING("0") },
-	{ PALCFG_SHADER,            PALCFG_STRING,   "Shader",             6, MAKE_STRING(NULL) },
+	{ PALCFG_SHADER,            PALCFG_STRING,   "Shader",             6, MAKE_STRING(NULL) }
 };
 
 static const char *music_types[] = { "MIDI", "RIX", "MP3", "OGG", "RAW" };
@@ -579,6 +580,8 @@ PAL_LoadConfig(
         UTIL_LogOutput(LOGLEVEL_ERROR, "Filter backend GLSL enabled but no valid effect file specified");
         gConfig.fEnableGLSL = FALSE;
     }
+
+	gConfig.fMouse = values[PALCFG_MOUSE].bValue;
 }
 
 
@@ -602,6 +605,7 @@ PAL_SaveConfig(
 		sprintf(buf, "%s=%d\n", PAL_ConfigName(PALCFG_ENABLEAVIPLAY), gConfig.fEnableAviPlay); fputs(buf, fp);
 		sprintf(buf, "%s=%d\n", PAL_ConfigName(PALCFG_ENABLEGLSL), gConfig.fEnableGLSL); fputs(buf, fp);
         sprintf(buf, "%s=%d\n", PAL_ConfigName(PALCFG_ENABLEHDR), gConfig.fEnableHDR); fputs(buf, fp);
+		sprintf(buf, "%s=%d\n", PAL_ConfigName(PALCFG_MOUSE), gConfig.fMouse); fputs(buf, fp);
 
 		sprintf(buf, "%s=%d\n", PAL_ConfigName(PALCFG_SURROUNDOPLOFFSET), gConfig.iSurroundOPLOffset); fputs(buf, fp);
 		sprintf(buf, "%s=%d\n", PAL_ConfigName(PALCFG_LOGLEVEL), gConfig.iLogLevel); fputs(buf, fp);
@@ -632,6 +636,8 @@ PAL_SaveConfig(
 		if (gConfig.pszMIDIClient && *gConfig.pszMIDIClient) { sprintf(buf, "%s=%s\n", PAL_ConfigName(PALCFG_MIDICLIENT), gConfig.pszMIDIClient); fputs(buf, fp); }
 		if (gConfig.pszScaleQuality && *gConfig.pszScaleQuality) { sprintf(buf, "%s=%s\n", PAL_ConfigName(PALCFG_SCALEQUALITY), gConfig.pszScaleQuality); fputs(buf, fp); }
 		if (gConfig.pszShader && *gConfig.pszShader) { sprintf(buf, "%s=%s\n", PAL_ConfigName(PALCFG_SHADER), gConfig.pszShader); fputs(buf, fp); }
+
+		sprintf(buf, "%s=%d\n", PAL_ConfigName(PALCFG_MOUSE), gConfig.fMouse); fputs(buf, fp);
 
 		fclose(fp);
 
@@ -691,6 +697,8 @@ PAL_GetConfigItem(
 		case PALCFG_OPL_CHIP:          value.sValue = opl_chips[gConfig.eOPLChip]; break;
 		case PALCFG_TEXTUREHEIGHT:     value.uValue = gConfig.dwTextureHeight; break;
 		case PALCFG_TEXTUREWIDTH:      value.uValue = gConfig.dwTextureWidth; break;
+
+		case PALCFG_MOUSE:             value.bValue = gConfig.fMouse; break;
 		default:                       break;
 		}
 	}
@@ -716,6 +724,7 @@ PAL_SetConfigItem(
 	case PALCFG_ENABLEAVIPLAY:     gConfig.fEnableAviPlay = value.bValue; break;
 	case PALCFG_ENABLEGLSL:        gConfig.fEnableGLSL = value.bValue; break;
 	case PALCFG_ENABLEHDR:         gConfig.fEnableHDR = value.bValue; break;
+	case PALCFG_MOUSE:             gConfig.fMouse = value.bValue; break;
 	case PALCFG_SURROUNDOPLOFFSET: gConfig.iSurroundOPLOffset = value.iValue; break;
 	case PALCFG_LOGLEVEL:          gConfig.iLogLevel = value.iValue; break;
 	case PALCFG_AUDIODEVICE:       gConfig.iAudioDevice = value.iValue; break;

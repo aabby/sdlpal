@@ -1,7 +1,7 @@
 /* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
 // Copyright (c) 2009-2011, Wei Mingzhi <whistler_wmz@users.sf.net>.
-// Copyright (c) 2011-2019, SDLPAL development team.
+// Copyright (c) 2011-2018, SDLPAL development team.
 // All rights reserved.
 //
 // This file is part of SDLPAL.
@@ -36,6 +36,10 @@
 #include "../util.h"
 #include "../palcfg.h"
 #include "../resampler.h"
+
+#ifdef PAL_STEAM
+#include <steam_api.h>
+#endif
 
 #ifndef GCLP_HICON
 # define GCLP_HICON (-14)
@@ -252,8 +256,11 @@ void ResetControls(HWND hwndDlg)
 INT_PTR InitProc(HWND hwndDlg, HWND hwndCtrl, LPARAM lParam)
 {
 	InitCommonControls();
+#ifdef PAL_STEAM
+	SetClassLongPtr(hwndDlg, GCLP_HICON, (LONG_PTR)LoadIcon((HINSTANCE)GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1)));
+#else
 	SetClassLongPtr(hwndDlg, GCLP_HICON, (LONG_PTR)LoadIcon((HINSTANCE)GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_SDLPAL)));
-
+#endif
 	auto log_levels = LoadResourceString(IDC_LOGLEVEL);
 	for (size_t pos = 0; pos != std::string::npos; )
 	{
@@ -338,7 +345,7 @@ INT_PTR ButtonProc(HWND hwndDlg, WORD idControl, HWND hwndCtrl)
 		if (pidl)
 		{
 			SHGetPathFromIDList(pidl, szName);
-			int n = _tcslen(szName);
+			int n = (int)_tcslen(szName);
 			if (szName[n - 1] != '\\') _tcscat(szName, L"\\");
 			SetDlgItemText(hwndDlg, IDC_GAMEPATH, szName);
 		}
@@ -451,6 +458,21 @@ extern "C" int UTIL_Platform_Init(int argc, char* argv[])
 	}
 	else
 		g_wLanguage = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL);
+
+	gpGlobals->wGameLanguage = g_wLanguage;
+
+#ifdef PAL_STEAM
+	const char *getlng = SteamApps()->GetCurrentGameLanguage();
+	if (strcmp(getlng, "schinese") == 0)
+	{
+		gpGlobals->wGameLanguage = MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED);
+	}
+	else if (strcmp(getlng, "tchinese") == 0)
+	{
+		gpGlobals->wGameLanguage = MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL);
+	}
+#endif
+
 	auto dlg = (LPCDLGTEMPLATE)LockResource(LoadResource(g_hInstance, FindResourceEx(g_hInstance, RT_DIALOG, MAKEINTRESOURCE(IDD_LAUNCHER), g_wLanguage)));
 	if (gConfig.fLaunchSetting && DialogBoxIndirect(GetModuleHandle(nullptr), dlg, nullptr, LauncherDialogProc) != IDOK)
 		return -1;
@@ -482,4 +504,13 @@ BOOL UTIL_IsAbsolutePath(LPCSTR  lpszFileName)
 		return (strlen(szDrive) > 0 && (szDir[0] == '\\' || szDir[0] == '/'));
 	else
 		return FALSE;
+}
+
+extern "C"
+bool UTIL_DirExists(const std::string &path) {
+	struct stat info;
+	if (stat(path.c_str(), &info) == 0 && info.st_mode & S_IFDIR) {
+		return true;
+	}
+	return false;
 }

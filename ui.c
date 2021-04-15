@@ -93,58 +93,61 @@ PAL_InitUI(
 	PAL_MKFReadChunk(gpSpriteUI, iSize, CHUNKNUM_SPRITEUI, gpGlobals->f.fpDATA);
 
 	extern SDL_Rect           gViewRect;
-
-	BOOL is4_3 = FALSE;
-    float rate = (float)gConfig.dwScreenHeight / (float)gConfig.dwScreenWidth;
-	if (rate == 0.75f || (gConfig.fIsIOS && gConfig.fIsIPAD))
-		is4_3 = TRUE;
-
-	memset(gUI_Buttom, 0, sizeof(UIBUTTOM)*MAX_BUTTOM);
-	AddButtom(buttomBACK, "back0.bmp", "back1.bmp", NULL);
-	SetButtom(buttomBACK, 324, -20, 30, 25);
-	AddButtom(buttomMENU, "menu.bmp", NULL, NULL);
-	SetButtom(buttomMENU, 324, -20, 30, 25);
-	if (is4_3)
+	if (gpGlobals->fMOUSE == TRUE)
 	{
-		gUI_Buttom[buttomBACK].Alpha = 0xC0;
-		gUI_Buttom[buttomMENU].Alpha = 0xA0;
-	}
+		BOOL is4_3 = FALSE;
+		float rate = (float)gConfig.dwScreenHeight / (float)gConfig.dwScreenWidth;
+		if (rate == 0.75f || (gConfig.fIsIOS && gConfig.fIsIPAD))
+			is4_3 = TRUE;
 
-	AddButtom(buttomAttack, "attack0.bmp", NULL, "attack2.bmp"); //³ò§ð
-	if (is4_3)
-	{
-		SetButtom(buttomAttack, 5, 4, 30, 25);
-		gUI_Buttom[buttomAttack].Alpha = 0xC0;
-	}
-	else
-		SetButtom(buttomAttack, -34, 4, 30, 25);
-	AddButtom(buttomMagic, "magic0.bmp", NULL, "magic2.bmp"); //±j§ð
-	if (is4_3)
-	{
-		SetButtom(buttomMagic, 45, 4, 30, 25);
-		gUI_Buttom[buttomMagic].Alpha = 0xC0;
-	}
-	else
-		SetButtom(buttomMagic, -34, 4 + (4 + 25), 30, 25);
-	AddButtom(buttomRepet, "repet0.bmp", NULL, "repet2.bmp"); //­«½Æ
-	if (is4_3)
-	{
-		SetButtom(buttomRepet, 85, 4, 30, 25);
-		gUI_Buttom[buttomRepet].Alpha = 0xC0;
-	}
-	else
-		SetButtom(buttomRepet, -34, 4 + ((4 + 25) * 2), 30, 25);
-	AddButtom(buttomClose, "close0.bmp", "close1.bmp", NULL);
-	SetButtom(buttomClose, 324, -20, 30, 25);
+		memset(gUI_Buttom, 0, sizeof(UIBUTTOM)*MAX_BUTTOM);
+		AddButtom(buttomBACK, "back0.bmp", "back1.bmp", NULL);
+		SetButtom(buttomBACK, 324, -20, 30, 25);
+		AddButtom(buttomMENU, "menu.bmp", NULL, NULL);
+		SetButtom(buttomMENU, 324, -20, 30, 25);
+		if (is4_3)
+		{
+			gUI_Buttom[buttomBACK].Alpha = 0xC0;
+			gUI_Buttom[buttomMENU].Alpha = 0xA0;
+		}
 
+		AddButtom(buttomAttack, "attack0.bmp", NULL, "attack2.bmp"); //³ò§ð
+		if (is4_3)
+		{
+			SetButtom(buttomAttack, 5, 4, 30, 25);
+			gUI_Buttom[buttomAttack].Alpha = 0xC0;
+		}
+		else
+			SetButtom(buttomAttack, -34, 4, 30, 25);
+		AddButtom(buttomMagic, "magic0.bmp", NULL, "magic2.bmp"); //±j§ð
+		if (is4_3)
+		{
+			SetButtom(buttomMagic, 45, 4, 30, 25);
+			gUI_Buttom[buttomMagic].Alpha = 0xC0;
+		}
+		else
+			SetButtom(buttomMagic, -34, 4 + (4 + 25), 30, 25);
+		AddButtom(buttomRepet, "repet0.bmp", NULL, "repet2.bmp"); //­«½Æ
+		if (is4_3)
+		{
+			SetButtom(buttomRepet, 85, 4, 30, 25);
+			gUI_Buttom[buttomRepet].Alpha = 0xC0;
+		}
+		else
+			SetButtom(buttomRepet, -34, 4 + ((4 + 25) * 2), 30, 25);
+		AddButtom(buttomClose, "close0.bmp", "close1.bmp", NULL);
+		SetButtom(buttomClose, 324, -20, 30, 25);
+
+	}
 	AddButtom(buttomLOGO, "LOGO.bmp", NULL, NULL); //copyright logo
-	SetButtom(buttomLOGO, 30, 170, 245, 23);
-
+	SetButtom(buttomLOGO, 0, 170, 320, 30);
+#ifndef PAL_STEAM
 	if (gpGlobals->wLanguage == 0)
 	{
 		AddButtom(buttomLOGO2, "gamerating.org.tw.15.bmp", NULL, NULL);
 		SetButtom(buttomLOGO2, 289, 172, 26, 21);
-    }
+	}
+#endif
 #ifdef PAL_HAS_GAMEPAD
    AddGamePad();
 #endif
@@ -463,7 +466,6 @@ PAL_DeleteBox(
    //
    VIDEO_FreeSurface(lpBox->lpSavedArea);
    free(lpBox);
-   VIDEO_Clean240();
 }
 
 WORD
@@ -502,7 +504,8 @@ PAL_ReadMenu(
 
    WORD              wCurrentItem    = (wDefaultItem < nMenuItem) ? wDefaultItem : 0;
 
-   Setup_MenuCtrl(rgMenuItem, nMenuItem, wCurrentItem);
+   if (gpGlobals->fMOUSE == TRUE)
+		Setup_MenuCtrl(rgMenuItem, nMenuItem, wCurrentItem);
    //
    // Draw all the menu texts.
    //
@@ -634,6 +637,7 @@ PAL_ReadMenu(
          {
             (*lpfnMenuItemChanged)(rgMenuItem[wCurrentItem].wValue);
          }
+		 g_InputState.dwKeyPress = 0;
       }
       else if (g_InputState.dwKeyPress & (kKeyUp | kKeyLeft))
       {
@@ -681,6 +685,7 @@ PAL_ReadMenu(
          {
             (*lpfnMenuItemChanged)(rgMenuItem[wCurrentItem].wValue);
          }
+		 g_InputState.dwKeyPress = 0;
       }
       else if (g_InputState.dwKeyPress & kKeyMenu)
       {
@@ -697,7 +702,7 @@ PAL_ReadMenu(
             PAL_DrawText(PAL_GetWord(rgMenuItem[wCurrentItem].wNumWord),
                rgMenuItem[wCurrentItem].pos, MENUITEM_COLOR_INACTIVE, FALSE, TRUE, FALSE);
          }
-
+		 g_InputState.dwKeyPress = 0;
          break;
       }
       else if (g_InputState.dwKeyPress & kKeySearch)
@@ -710,6 +715,7 @@ PAL_ReadMenu(
             PAL_DrawText(PAL_GetWord(rgMenuItem[wCurrentItem].wNumWord),
                rgMenuItem[wCurrentItem].pos, MENUITEM_COLOR_CONFIRMED, FALSE, TRUE, FALSE);
 			Setup_MenuCtrl(NULL, 0, 0);
+			g_InputState.dwKeyPress = 0;
             return rgMenuItem[wCurrentItem].wValue;
          }
       }

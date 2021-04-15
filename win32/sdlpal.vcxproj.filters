@@ -345,6 +345,9 @@
     <ClCompile Include="..\glslp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\ui_buttom.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ascii.h">
@@ -735,6 +738,9 @@
       <Filter>glsl</Filter>
     </ClInclude>
     <ClInclude Include="..\glslp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ui_buttom.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

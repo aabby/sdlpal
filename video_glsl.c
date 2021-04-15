@@ -1,25 +1,8 @@
-/* -*- mode: c; tab-width: 4; c-basic-offset: 4; c-file-style: "linux" -*- */
 //
-// Copyright (c) 2011-2019, SDLPAL development team.
-// All rights reserved.
+//  video_glsl.c
+//  Pal
 //
-// This file is part of SDLPAL.
-//
-// SDLPAL is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-//
-// video_glsl.c: hacky SDL2 renderer that compatible of retroarch-style
-// multipass shader preset by palxex, 2018
+//  Created by palxex on 27/2/18.
 //
 
 #include "main.h"
@@ -1119,8 +1102,7 @@ void VIDEO_GLSL_Setup() {
     }
     Filter_StepParamSlot(0);
 
-#if !__IOS__
-    // in case of GL2/GLES2(except iOS), the LACK of the belowing snippit makes keepaspectratio a mess.
+    // in case of GL2/GLES2, the LACK of the belowing snippit makes keepaspectratio a mess.
     // Unsure what happened.
     if( glversion_major <= 2 ) {
         id=0;
@@ -1130,7 +1112,6 @@ void VIDEO_GLSL_Setup() {
         glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, gEBOId );
         setupShaderParams(id);
     }
-#endif
     
     if(VAOSupported) glBindVertexArray(0);
 

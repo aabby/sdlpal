@@ -50,6 +50,7 @@
 #define MAINMENU_LABEL_LOADGAME            8
 
 #define LOADMENU_LABEL_SLOT_FIRST          43
+#define LOADMENU_LABEL_SLOT_AUTOSAVE       565
 
 #define CONFIRMMENU_LABEL_NO               19
 #define CONFIRMMENU_LABEL_YES              20

@@ -1,11 +1,11 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ 生成的包含文件。
-// 供 sdlpal.rc 使用
+// Microsoft Visual C++ 玻ネ Include 郎
+// パ sdlpal.rc ㄏノ
 //
 #define APP_MANIFEST                    1
-#define IDI_SDLPAL                      101
 #define IDD_LAUNCHER                    101
 #define IDS_CONFIRM                     102
+#define IDI_ICON1                       103
 #define IDC_DEFAULT                     1000
 #define IDC_BRGAME                      1001
 #define IDC_GAMEPATH                    1002
@@ -49,7 +49,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        103
+#define _APS_NEXT_RESOURCE_VALUE        104
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1029
 #define _APS_NEXT_SYMED_VALUE           101
