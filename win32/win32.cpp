@@ -256,7 +256,7 @@ void ResetControls(HWND hwndDlg)
 INT_PTR InitProc(HWND hwndDlg, HWND hwndCtrl, LPARAM lParam)
 {
 	InitCommonControls();
-#ifdef PAL_STEAM
+#ifdef SOFTSTAR
 	SetClassLongPtr(hwndDlg, GCLP_HICON, (LONG_PTR)LoadIcon((HINSTANCE)GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_ICON1)));
 #else
 	SetClassLongPtr(hwndDlg, GCLP_HICON, (LONG_PTR)LoadIcon((HINSTANCE)GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_SDLPAL)));

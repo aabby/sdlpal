@@ -115,7 +115,7 @@ PAL_ReadOneLine(
 {
 	if (fgets(temp, limit, fp))
 	{
-		int n = strlen(temp);
+		int n = (int)strlen(temp);
 		if (n == limit - 1 && temp[n - 1] != '\n' && !feof(fp))
 		{
 			// Line too long, try to read it as a whole
@@ -129,7 +129,7 @@ PAL_ReadOneLine(
 				}
 				if (fgets(tmp + n, limit + 1, fp))
 				{
-					n += strlen(tmp + n);
+					n += (int)strlen(tmp + n);
 					if (n < limit - 1 || temp[n - 1] == '\n')
 						break;
 					else
@@ -608,6 +608,109 @@ PAL_ReadMessageFile(
 	return (msg_cnt > 0 && word_cnt > 0) ? 1 : 0;
 }
 
+extern LPWSTR *ReadExtendText(LPBYTE source, size_t length, int* count);
+
+bool Extend_InitTextMsg()
+{
+	//extend textlib
+	g_TextLib.lpMsgBuf_mem = NULL;
+	FILE       *fpMsg;
+	LPBYTE      temp;
+	if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
+	{
+		fpMsg = UTIL_OpenFile("MSG_chs.txt");
+	}
+	else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
+	{
+		fpMsg = UTIL_OpenFile("MSG_cht.txt");
+	}
+
+	if (fpMsg != NULL)
+	{
+		fseek(fpMsg, 0, SEEK_END);
+		size_t length = ftell(fpMsg);
+		fseek(fpMsg, 0, SEEK_SET);
+		temp = (LPBYTE)malloc(length + 2);
+		g_TextLib.lpMsgBuf_mem = temp;
+		if (temp)
+		{
+			temp[length - 1] = 0; temp[length - 2] = 0;
+			if (fread(temp, 1, length, fpMsg) < length)
+			{
+				free(temp);
+				goto Failure;
+			}
+			else
+			{
+				g_TextLib.lpMsgBuf = ReadExtendText(temp, length, &g_TextLib.nMsgs);
+				if (g_TextLib.lpMsgBuf == NULL)
+				{
+					free(temp);
+					goto Failure;
+				}
+			}
+		}
+		fclose(fpMsg);
+	}
+	else
+		return false;
+
+	return true;
+Failure:
+	fclose(fpMsg);
+	g_TextLib.lpMsgBuf_mem = NULL;
+	return false;
+}
+
+bool Extend_InitTextWords()
+{
+	g_TextLib.lpWordBuf_mem = NULL;
+	FILE       *fpWord;
+	LPBYTE      temp;
+	if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
+	{
+		fpWord = UTIL_OpenFile("WORD_chs.txt");
+	}
+	else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
+	{
+		fpWord = UTIL_OpenFile("WORD_cht.txt");
+	}
+	if (fpWord)
+	{
+		fseek(fpWord, 0, SEEK_END);
+		size_t length = ftell(fpWord);
+		fseek(fpWord, 0, SEEK_SET);
+		temp = (LPBYTE)malloc(length + 2);
+		g_TextLib.lpWordBuf_mem = temp;
+		if (temp)
+		{
+			temp[length - 1] = 0; temp[length - 2] = 0;
+			if (fread(temp, 1, length, fpWord) < length)
+			{
+				free(temp);
+				goto Failure;
+			}
+			else
+			{
+				g_TextLib.lpWordBuf = ReadExtendText(temp, length, &g_TextLib.nWords);
+				if (g_TextLib.lpWordBuf == NULL)
+				{
+					free(temp);
+					goto Failure;
+				}
+			}
+		}
+		fclose(fpWord);
+	}
+	else
+		return false;
+	return true;
+Failure:
+	fclose(fpWord);
+	g_TextLib.lpWordBuf_mem = NULL;
+	return false;
+}
+
 INT
 PAL_InitText(
    VOID
@@ -631,7 +734,10 @@ PAL_InitText(
    g_TextLib.fUseISOFont = TRUE;
    g_TextLib.iFontFlavor = kFontFlavorUnifont;
 
-   if (gConfig.pszMsgFile)
+   bool Extend_msg = Extend_InitTextMsg();
+   bool Extend_words = Extend_InitTextWords();
+
+   if (gConfig.pszMsgFile && Extend_msg == false && Extend_words == false)
    {
 	   //
 	   // Open the message, index and word data files.
@@ -675,173 +781,174 @@ PAL_InitText(
 	   LPBYTE      temp;
 	   int         wpos, wlen, i;
 
-	   //
-	   // Open the message and word data files.
-	   //
-	   if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
+	   if (!Extend_words)
 	   {
-		   fpMsg = UTIL_OpenFile("M_chs.MSG");
-		   fpWord = UTIL_OpenFile("WORD_chs.DAT");
-	   }
-	   else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
-	   {
-		   fpMsg = UTIL_OpenFile("M_cht.MSG");
-		   fpWord = UTIL_OpenFile("WORD_cht.DAT");
-	   }
+		   //
+		   // Open the word data files.
+		   //
+		   if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
+		   {
+			   fpWord = UTIL_OpenFile("WORD_chs.DAT");
+		   }
+		   else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
+		   {
+			   fpWord = UTIL_OpenFile("WORD_cht.DAT");
+		   }
 
-	   if (fpMsg == NULL)
-		   fpMsg = UTIL_OpenRequiredFile("M.MSG");
-	   if (fpWord == NULL)
-		   fpWord = UTIL_OpenRequiredFile("WORD.DAT");
-	   //
-	   // See how many words we have
-	   //
-	   fseek(fpWord, 0, SEEK_END);
-	   i = ftell(fpWord);
+		   if (fpWord == NULL)
+			   fpWord = UTIL_OpenRequiredFile("WORD.DAT");
+		   //
+		   // See how many words we have
+		   //
+		   fseek(fpWord, 0, SEEK_END);
+		   i = ftell(fpWord);
 
-	   //
-	   // Each word has 10 bytes
-	   //
-	   g_TextLib.nWords = (i + (gConfig.dwWordLength - 1)) / gConfig.dwWordLength;
-	   if (g_TextLib.nWords < MINIMAL_WORD_COUNT) g_TextLib.nWords = MINIMAL_WORD_COUNT;
+		   //
+		   // Each word has 10 bytes
+		   //
+		   g_TextLib.nWords = (i + (gConfig.dwWordLength - 1)) / gConfig.dwWordLength;
+		   if (g_TextLib.nWords < MINIMAL_WORD_COUNT) g_TextLib.nWords = MINIMAL_WORD_COUNT;
 
-	   //
-	   // Read the words
-	   //
-	   temp = (LPBYTE)malloc(gConfig.dwWordLength * g_TextLib.nWords);
-	   if (temp == NULL)
-	   {
+		   //
+		   // Read the words
+		   //
+		   temp = (LPBYTE)malloc(gConfig.dwWordLength * g_TextLib.nWords);
+		   if (temp == NULL)
+		   {
+			   fclose(fpWord);
+			   return -1;
+		   }
+		   fseek(fpWord, 0, SEEK_SET);
+		   if (fread(temp, 1, i, fpWord) < (size_t)i)
+		   {
+			   fclose(fpWord);
+			   return -1;
+		   }
+		   memset(temp + i, 0, gConfig.dwWordLength * g_TextLib.nWords - i);
+
+		   //
+		   // Close the words file
+		   //
 		   fclose(fpWord);
-		   fclose(fpMsg);
-		   return -1;
-	   }
-	   fseek(fpWord, 0, SEEK_SET);
-	   if (fread(temp, 1, i, fpWord) < (size_t)i)
-	   {
-		   fclose(fpWord);
-		   fclose(fpMsg);
-		   return -1;
-	   }
-	   memset(temp + i, 0, gConfig.dwWordLength * g_TextLib.nWords - i);
 
-	   //
-	   // Close the words file
-	   //
-	   fclose(fpWord);
-
-	   // Split the words and do code page conversion
-	   for (i = 0, wlen = 0; i < g_TextLib.nWords; i++)
-	   {
-		   int base = i * gConfig.dwWordLength;
-		   int pos = base + gConfig.dwWordLength - 1;
-		   while (pos >= base && temp[pos] == ' ') temp[pos--] = 0;
-		   wlen += PAL_MultiByteToWideChar((LPCSTR)temp + base, gConfig.dwWordLength, NULL, 0) + 1;
-	   }
-	   g_TextLib.lpWordBuf = (LPWSTR*)malloc(g_TextLib.nWords * sizeof(LPWSTR));
-	   if (g_TextLib.lpWordBuf == NULL)
-	   {
+		   // Split the words and do code page conversion
+		   for (i = 0, wlen = 0; i < g_TextLib.nWords; i++)
+		   {
+			   int base = i * gConfig.dwWordLength;
+			   int pos = base + gConfig.dwWordLength - 1;
+			   while (pos >= base && temp[pos] == ' ') temp[pos--] = 0;
+			   wlen += PAL_MultiByteToWideChar((LPCSTR)temp + base, gConfig.dwWordLength, NULL, 0) + 1;
+		   }
+		   g_TextLib.lpWordBuf = (LPWSTR*)malloc(g_TextLib.nWords * sizeof(LPWSTR));
+		   if (g_TextLib.lpWordBuf == NULL)
+		   {
+			   free(temp);
+			   return -1;
+		   }
+		   tmp = (LPWSTR)malloc(wlen * sizeof(WCHAR));
+		   if (tmp == NULL)
+		   {
+			   free(g_TextLib.lpWordBuf);
+			   free(temp);
+			   return -1;
+		   }
+		   for (i = 0, wpos = 0; i < g_TextLib.nWords; i++)
+		   {
+			   int l;
+			   g_TextLib.lpWordBuf[i] = tmp + wpos;
+			   l = PAL_MultiByteToWideChar((LPCSTR)temp + i * gConfig.dwWordLength, gConfig.dwWordLength, g_TextLib.lpWordBuf[i], wlen - wpos);
+			   if (l > 0 && g_TextLib.lpWordBuf[i][l - 1] == '1')
+				   g_TextLib.lpWordBuf[i][l - 1] = 0;
+			   g_TextLib.lpWordBuf[i][l] = 0;
+			   wpos += l + 1;
+		   }
 		   free(temp);
-		   fclose(fpMsg);
-		   return -1;
 	   }
-	   tmp = (LPWSTR)malloc(wlen * sizeof(WCHAR));
-	   if (tmp == NULL)
+	   if (!Extend_msg)
 	   {
-		   free(g_TextLib.lpWordBuf);
+		   //
+		   // Open the message data files.
+		   //
+		   if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED))
+		   {
+			   fpMsg = UTIL_OpenFile("M_chs.MSG");
+		   }
+		   else if (gpGlobals->wGameLanguage == MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_TRADITIONAL))
+		   {
+			   fpMsg = UTIL_OpenFile("M_cht.MSG");
+		   }
+
+		   if (fpMsg == NULL)
+			   fpMsg = UTIL_OpenRequiredFile("M.MSG");
+
+		   //
+		   // Read the message offsets. The message offsets are in SSS.MKF #3
+		   //
+		   i = PAL_MKFGetChunkSize(3, gpGlobals->f.fpSSS) / sizeof(DWORD);
+		   g_TextLib.nMsgs = i - 1;
+
+		   offsets = (LPDWORD)malloc(i * sizeof(DWORD));
+		   if (offsets == NULL)
+		   {
+			   fclose(fpMsg);
+			   return -1;
+		   }
+
+		   PAL_MKFReadChunk((LPBYTE)(offsets), i * sizeof(DWORD), 3, gpGlobals->f.fpSSS);
+
+		   //
+		   // Read the messages.
+		   //
+		   fseek(fpMsg, 0, SEEK_END);
+		   i = ftell(fpMsg);
+
+		   temp = (LPBYTE)malloc(i);
+		   if (temp == NULL)
+		   {
+			   free(offsets);
+			   fclose(fpMsg);
+			   return -1;
+		   }
+
+		   fseek(fpMsg, 0, SEEK_SET);
+		   if (fread(temp, 1, i, fpMsg) < (size_t)i)
+		   {
+			   free(offsets);
+			   fclose(fpMsg);
+			   return -1;
+		   }
+
+		   fclose(fpMsg);
+
+		   // Split messages and do code page conversion here
+		   for (i = 0, wlen = 0; i < g_TextLib.nMsgs; i++)
+		   {
+			   wlen += PAL_MultiByteToWideChar((LPCSTR)temp + SDL_SwapLE32(offsets[i]), SDL_SwapLE32(offsets[i + 1]) - SDL_SwapLE32(offsets[i]), NULL, 0) + 1;
+		   }
+		   g_TextLib.lpMsgBuf = (LPWSTR*)malloc(g_TextLib.nMsgs * sizeof(LPWSTR));
+		   if (g_TextLib.lpMsgBuf == NULL)
+		   {
+			   free(offsets);
+			   return -1;
+		   }
+		   tmp = (LPWSTR)malloc(wlen * sizeof(WCHAR));
+		   if (tmp == NULL)
+		   {
+			   free(g_TextLib.lpMsgBuf);
+			   free(offsets);
+			   return -1;
+		   }
+		   for (i = 0, wpos = 0; i < g_TextLib.nMsgs; i++)
+		   {
+			   int l;
+			   g_TextLib.lpMsgBuf[i] = tmp + wpos;
+			   l = PAL_MultiByteToWideChar((LPCSTR)temp + SDL_SwapLE32(offsets[i]), SDL_SwapLE32(offsets[i + 1]) - SDL_SwapLE32(offsets[i]), g_TextLib.lpMsgBuf[i], wlen - wpos);
+			   g_TextLib.lpMsgBuf[i][l] = 0;
+			   wpos += l + 1;
+		   }
 		   free(temp);
-		   fclose(fpMsg);
-		   return -1;
-	   }
-	   for (i = 0, wpos = 0; i < g_TextLib.nWords; i++)
-	   {
-		   int l;
-		   g_TextLib.lpWordBuf[i] = tmp + wpos;
-		   l = PAL_MultiByteToWideChar((LPCSTR)temp + i * gConfig.dwWordLength, gConfig.dwWordLength, g_TextLib.lpWordBuf[i], wlen - wpos);
-		   if (l > 0 && g_TextLib.lpWordBuf[i][l - 1] == '1')
-			   g_TextLib.lpWordBuf[i][l - 1] = 0;
-		   g_TextLib.lpWordBuf[i][l] = 0;
-		   wpos += l + 1;
-	   }
-	   free(temp);
-
-	   //
-	   // Read the message offsets. The message offsets are in SSS.MKF #3
-	   //
-	   i = PAL_MKFGetChunkSize(3, gpGlobals->f.fpSSS) / sizeof(DWORD);
-	   g_TextLib.nMsgs = i - 1;
-
-	   offsets = (LPDWORD)malloc(i * sizeof(DWORD));
-	   if (offsets == NULL)
-	   {
-		   free(g_TextLib.lpWordBuf[0]);
-		   free(g_TextLib.lpWordBuf);
-		   fclose(fpMsg);
-		   return -1;
-	   }
-
-	   PAL_MKFReadChunk((LPBYTE)(offsets), i * sizeof(DWORD), 3, gpGlobals->f.fpSSS);
-
-	   //
-	   // Read the messages.
-	   //
-	   fseek(fpMsg, 0, SEEK_END);
-	   i = ftell(fpMsg);
-
-	   temp = (LPBYTE)malloc(i);
-	   if (temp == NULL)
-	   {
 		   free(offsets);
-		   free(g_TextLib.lpWordBuf[0]);
-		   free(g_TextLib.lpWordBuf);
-		   fclose(fpMsg);
-		   return -1;
 	   }
-
-	   fseek(fpMsg, 0, SEEK_SET);
-	   if (fread(temp, 1, i, fpMsg) < (size_t)i)
-	   {
-		   free(offsets);
-		   free(g_TextLib.lpWordBuf[0]);
-		   free(g_TextLib.lpWordBuf);
-		   fclose(fpMsg);
-		   return -1;
-	   }
-
-	   fclose(fpMsg);
-
-	   // Split messages and do code page conversion here
-	   for (i = 0, wlen = 0; i < g_TextLib.nMsgs; i++)
-	   {
-		   wlen += PAL_MultiByteToWideChar((LPCSTR)temp + SDL_SwapLE32(offsets[i]), SDL_SwapLE32(offsets[i + 1]) - SDL_SwapLE32(offsets[i]), NULL, 0) + 1;
-	   }
-	   g_TextLib.lpMsgBuf = (LPWSTR*)malloc(g_TextLib.nMsgs * sizeof(LPWSTR));
-	   if (g_TextLib.lpMsgBuf == NULL)
-	   {
-		   free(g_TextLib.lpWordBuf[0]);
-		   free(g_TextLib.lpWordBuf);
-		   free(offsets);
-		   return -1;
-	   }
-	   tmp = (LPWSTR)malloc(wlen * sizeof(WCHAR));
-	   if (tmp == NULL)
-	   {
-		   free(g_TextLib.lpMsgBuf);
-		   free(g_TextLib.lpWordBuf[0]);
-		   free(g_TextLib.lpWordBuf);
-		   free(offsets);
-		   return -1;
-	   }
-	   for (i = 0, wpos = 0; i < g_TextLib.nMsgs; i++)
-	   {
-		   int l;
-		   g_TextLib.lpMsgBuf[i] = tmp + wpos;
-		   l = PAL_MultiByteToWideChar((LPCSTR)temp + SDL_SwapLE32(offsets[i]), SDL_SwapLE32(offsets[i + 1]) - SDL_SwapLE32(offsets[i]), g_TextLib.lpMsgBuf[i], wlen - wpos);
-		   g_TextLib.lpMsgBuf[i][l] = 0;
-		   wpos += l + 1;
-	   }
-	   free(temp);
-	   free(offsets);
-
 	   g_TextLib.lpIndexBuf = NULL;
 
 	   memcpy(g_TextLib.lpWordBuf + SYSMENU_LABEL_LAUNCHSETTING, gc_rgszSDLPalWords[PAL_GetCodePage()], SDLPAL_EXTRA_WORD_COUNT * sizeof(LPCWSTR));
@@ -852,6 +959,8 @@ PAL_InitText(
 
        g_TextLib.iFontFlavor = kFontFlavorAuto;
    }
+
+
 
    g_TextLib.bCurrentFontColor = FONT_COLOR_DEFAULT;
    g_TextLib.bIcon = 0;
@@ -892,8 +1001,16 @@ PAL_FreeText(
    {
       if (gConfig.pszMsgFile)
          for(i = 0; i < g_TextLib.nMsgs; i++) free(g_TextLib.lpMsgBuf[i]);
-      else
-         free(g_TextLib.lpMsgBuf[0]);
+	  else
+	  {
+		  if (g_TextLib.lpMsgBuf_mem)
+		  {
+			  free(g_TextLib.lpMsgBuf_mem);
+			  g_TextLib.lpMsgBuf_mem = NULL;
+		  }
+		  else
+			free(g_TextLib.lpMsgBuf[0]);
+	  }
       free(g_TextLib.lpMsgBuf);
       g_TextLib.lpMsgBuf = NULL;
    }
@@ -901,8 +1018,16 @@ PAL_FreeText(
    {
       if (gConfig.pszMsgFile)
          for(i = 0; i < g_TextLib.nWords; i++) free(g_TextLib.lpWordBuf[i]);
-      else
-         free(g_TextLib.lpWordBuf[0]);
+	  else
+	  {
+		  if (g_TextLib.lpWordBuf_mem)
+		  {
+			  free(g_TextLib.lpWordBuf_mem);
+			  g_TextLib.lpWordBuf_mem = NULL;
+		  }
+		  else
+			free(g_TextLib.lpWordBuf[0]);
+	  }
       free(g_TextLib.lpWordBuf);
       g_TextLib.lpWordBuf = NULL;
    }
@@ -1565,7 +1690,7 @@ PAL_ShowDialogText(
       {
          PAL_POS    pos;
          LPBOX      lpBox;
-		 int        i, w = wcslen(lpszText), len = 0;
+		 int        i, w = (int)wcslen(lpszText), len = 0;
 		 for (i = 0; i < w; i++)
             len += PAL_CharWidth(lpszText[i]) >> 3;
          //
@@ -1600,7 +1725,7 @@ PAL_ShowDialogText(
    }
    else
    {
-      int len = wcslen(lpszText);
+      int len = (int)wcslen(lpszText);
       if (g_TextLib.nCurrentDialogLine == 0 &&
           g_TextLib.bDialogPosition != kDialogCenter &&
 		  (lpszText[len - 1] == 0xff1a ||
@@ -1882,7 +2007,7 @@ PAL_MultiByteToWideCharCP(
 
 	if (mbslength == -1)
 	{
-		mbslength = strlen(mbs);
+		mbslength = (int)strlen(mbs);
 		null = 1;
 	}
 
@@ -2352,7 +2477,7 @@ PAL_swprintf(
 
 				// Limit output length no longer then precision
 				if (precision > (int)len)
-					precision = len;
+					precision = (int)len;
 
 				// Left-side padding
 				for (i = 0; !left_aligned && i < width - precision && buffer < buffer_end; i++)
@@ -2453,5 +2578,5 @@ PAL_swprintf(
 	*buffer = L'\0';
 
 	va_end(ap);
-	return count;
+	return (int)count;
 }

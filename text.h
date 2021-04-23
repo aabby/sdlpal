@@ -47,7 +47,9 @@ PAL_C_LINKAGE_BEGIN
 typedef struct tagTEXTLIB
 {
     LPWSTR         *lpWordBuf;
+	LPBYTE          lpWordBuf_mem;
     LPWSTR         *lpMsgBuf;
+	LPBYTE          lpMsgBuf_mem;
     int           **lpIndexBuf;
     BOOL            fUseISOFont;
 	int             iFontFlavor;

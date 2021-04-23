@@ -605,7 +605,7 @@ UTIL_GetFullPathName(
 {
 	if (!buffer || !basepath || !subpath || buflen == 0) return NULL;
 
-	int sublen = strlen(subpath);
+	int sublen = (int)strlen(subpath);
 	if (sublen == 0) return NULL;
 
 	char *_base = strdup(basepath), *_sub = strdup(subpath);
@@ -678,7 +678,7 @@ UTIL_CombinePath(
 		for (int i = 0; i < numentry && buflen > 1; i++)
 		{
 			const char *path = va_arg(argptr, const char *);
-			int path_len = path ? strlen(path) : 0;
+			int path_len = path ? (int)strlen(path) : 0;
 			int append_delim = (i < numentry - 1 && path_len > 0 && !PAL_IS_PATH_SEPARATOR(path[path_len - 1]));
 			
 			for (int is_sep = 0, j = 0; j < path_len && buflen > (size_t)append_delim + 1; j++)
@@ -1010,4 +1010,186 @@ SDL_Surface * UTIL_LoadBMP(LPCSTR file)
 		}
 	}
 	return NULL;
+}
+
+int powInt(int x, int y)
+{
+	for (int i = 0; i < y; i++)
+	{
+		x *= 10;
+	}
+	return x;
+}
+int parseInt(unsigned char* chars)
+{
+	int sum = 0;
+	int len = (int)strlen(chars);
+	for (int x = 0; x < len; x++)
+	{
+		int n = chars[len - (x + 1)] - '0';
+		sum = sum + powInt(n, x);
+	}
+	return sum;
+}
+
+LPWSTR *ReadExtendText(LPBYTE source, size_t length, int* count)
+{
+	LPWSTR *output = NULL;
+	wchar_t *wtemp = (wchar_t *)source;
+	//count id
+	int max_id = 0;
+	size_t i = 0;
+	wchar_t c;
+	unsigned char num[9]; int num_i = 0; memset(num, 0, sizeof(unsigned char) * 9);
+	bool line_head = true;
+	//utf16 bom
+	if (source[0] == 0xFF && source[1] == 0xFE)
+	{
+		i++;
+	}
+	while (i < (length / 2))
+	{
+		c = wtemp[i++];
+		if (line_head)
+		{
+			if (c == L';') //Comment
+			{
+				wtemp[i - 1] = 0;
+				c = wtemp[i];
+				while (c != L'\n' && i < (length / 2))
+				{
+					c = wtemp[i];
+					wtemp[i++] = 0;
+				}
+				num_i = 0; num[num_i] = 0;
+			}
+			else if (c == L':')
+			{
+				num[num_i] = 0;
+				int id = parseInt(num);
+				if (id > max_id) max_id = id;
+				line_head = false;
+				num_i = 0;
+			}
+			else
+			{
+				if (c < L'0' || c > L'9')
+				{
+					wtemp[i - 1] = 0;
+					c = wtemp[i];
+					if (c == L'\n')
+						wtemp[i++] = 0;
+					else
+					{
+						while (c != L'\n' && i < (length / 2))
+						{
+							c = wtemp[i];
+							wtemp[i++] = 0;
+						}
+					}
+					num_i = 0; num[num_i] = 0;
+				}
+				else
+				{
+					num[num_i++] = (unsigned char)c;
+					if (num_i >= 8 && wtemp[i] != L':')
+					{
+						i -= 8;
+						while (c != L'\n' && i < (length / 2))
+						{
+							c = wtemp[i];
+							wtemp[i++] = 0;
+						}
+						num_i = 0; num[num_i] = 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			if (c == L'\r')
+				wtemp[i - 1] = 0;
+			if (c == L'\n')
+			{
+				line_head = true;
+				wtemp[i - 1] = 0;
+			}
+		}
+	}
+	if (max_id > 0)
+	{
+		max_id += 1;
+		int empty_id = -1;
+		num_i = 0;
+		*count = max_id;
+		output = (LPWSTR*)malloc(max_id * sizeof(LPWSTR*));
+		memset(output, 0, max_id * sizeof(LPWSTR*));
+		
+		if (output)
+		{
+			i = 0;
+			//utf16 bom
+			if (source[0] == 0xFF && source[1] == 0xFE)
+			{
+				i++;
+			}
+			line_head = true;
+			while (i < (length / 2))
+			{
+				c = wtemp[i++];
+				if (line_head)
+				{
+					if (c == 0)
+					{
+						while (c == 0 && i < (length / 2))
+						{
+							c = wtemp[i++];
+						}
+						i--;
+						num_i = 0; num[num_i] = 0;
+					}
+					else if (c == L':')
+					{
+						num[num_i] = 0;
+						int id = parseInt(num);
+						output[id] = wtemp + i;
+						size_t len = wcslen(output[id]);
+						i += len;
+						line_head = false;
+						num_i = 0;
+
+						if (empty_id == -1)
+							empty_id = id;
+					}
+					else
+					{
+						num[num_i++] = (unsigned char)c;
+					}
+				}
+				else
+				{
+					if (c == 0 && wtemp[i] != 0)
+					{
+						line_head = true;
+					}
+				}
+			}
+		}
+		else
+		{
+			if (output)
+				free(output);
+			return NULL;
+		}
+		for (i = 0; i < (size_t)max_id; i++)
+		{
+			if (output[i] == NULL)
+				output[i] = output[empty_id];
+		}
+	}
+	else
+	{
+		return NULL;
+	}
+	return output;
 }

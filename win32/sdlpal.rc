@@ -336,12 +336,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "SDLPAL Team"
             VALUE "FileDescription", "SDLPAL Main executable"
-            VALUE "FileVersion", "2.0.0.1"
+            VALUE "FileVersion", "2.0.0.1-1"
             VALUE "InternalName", "sdlpal.exe"
             VALUE "LegalCopyright", "Copyright (C) SDLPAL Team 2009 - 2018 (C)SOFTSTAR 1995 - 2021"
             VALUE "OriginalFilename", "sdlpal.exe"
             VALUE "ProductName", "SDL PAL"
-            VALUE "ProductVersion", "2.0.0.1"
+            VALUE "ProductVersion", "2.0.0.1-1"
         END
     END
     BLOCK "VarFileInfo"
